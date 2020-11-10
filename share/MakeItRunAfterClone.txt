@@ -1,0 +1,49 @@
+# Karl Keusgen
+# 2020-04-23
+#
+# Steps to proceed after cloning to make this repository run
+
+Link clone directory to /multus
+
+sudo mv /var/www/html /var/www/html.old
+sudo ln -s /multus/html /var/www/html
+
+
+cp /multus/share/configs/multusd.conf /multus/etc/
+cp /multus/share/configs/BasicInfos.conf /multus/etc/multusd_d/
+cp /multus/share/configs/multusModules.conf /multus/etc/multusd_d/
+
+sudo chmod a+w /multus/etc/multusd_d/*
+
+sudo cp /multus/share/multusd.service /etc/systemd/system/
+
+sudo systemctl enable multusd
+
+sudo cp /multus/share/multuslogs /etc/logrotate.d/
+
+sudo chmod -R a+w /multus/openvpn
+
+mkdir /multus/tmp
+sudo chmod -R a+w /multus/tmp
+
+mkdir /multus/log
+mkdir /multus/run
+
+sudo chmod a+x /multus/bin/*.py
+sudo chmod a+x /multus/bin/*.sh
+
+/multus/share/DoAllProtoFiles.sh
+
+sudo crontab -e
+Zeile hinzufuegen:
+
+*/10    *   *   *   *   /multus/bin/setrights.sh 
+
+cd /multus/html
+git clone https://github.com/potsky/PimpMyLog.git
+mv PimpMyLog logs
+
+cp /multus/share/configs/config.user.php /multus/html/logs
+
+Setup OpenVPN via http
+

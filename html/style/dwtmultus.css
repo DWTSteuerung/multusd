@@ -1,0 +1,195 @@
+/*
+ Karl Keusgen
+ multus III
+
+ 2019-10-31
+*/
+
+@charset "utf-8";
+body {
+	font: 100%/1.4 Verdana, Arial, Helvetica, sans-serif;
+	background: #416680;
+	margin: 0;
+	padding: 0;
+	color: #000;
+}
+h1, h2, h3, h4, h5, h6, p {
+	margin-top: 0px;	 /* Durch Verschieben des oberen Rands wird das Problem behoben, dass Ränder aus dem zugehörigen div-Tag geraten können. Der übrig gebliebene untere Rand hält ihn getrennt von allen folgenden Elementen. */
+	padding-right: 15px;
+	padding-left: 15px; /* Durch Hinzufügen der Auffüllung zu den Seiten der Elemente innerhalb der div-Tags anstelle der div-Tags selbst entfallen jegliche Box-Modell-Berechnungen. Alternativ kann auch ein verschachteltes div-Tag mit seitlicher Auffüllung verwendet werden. */
+}
+
+/* ~~ Element-/Tag-Selektoren ~~ */
+ul, ol, dl { /* Aufgrund von Abweichungen zwischen verschiedenen Browsern empfiehlt es sich, die Auffüllung und den Rand in Listen auf 0 einzustellen. Zu Konsistenzzwecken können Sie die gewünschten Werte entweder hier oder in den enthaltenen Listenelementen (LI, DT, DD) eingeben. Beachten Sie, dass die hier eingegebenen Werte hierarchisch auf die .nav-Liste angewendet werden, sofern Sie keinen spezifischeren Selektor festlegen. */
+	padding: 0;
+	margin: 0;
+}
+F1 { /* Farbe der Login Fehlermeldung. */
+	color: #F00;
+}
+a img { /* Dieser Selektor entfernt den standardmäßigen blauen Rahmen, der in einigen Browsern um ein Bild angezeigt wird, wenn es von einem Hyperlink umschlossen ist. */
+	border: none;
+}
+/* ~~ Die Reihenfolge der Stildefinitionen für die Hyperlinks der Site, einschließlich der Gruppe der Selektoren zum Erzeugen des Hover-Effekts, muss erhalten bleiben. ~~ */
+a:link {
+	color: #42413C;
+	text-decoration: underline; /* Sofern Ihre Hyperlinks nicht besonders hervorgehoben werden sollen, empfiehlt es sich, zur schnellen visuellen Erkennung Unterstreichungen zu verwenden. */
+}
+a:visited {
+	color: #6E6C64;
+	text-decoration: underline;
+}
+a:hover, a:active, a:focus { /* Durch diese Gruppe von Selektoren wird bei Verwendung der Tastatur der gleiche Hover-Effekt wie beim Verwenden der Maus erzielt. */
+	text-decoration: none;
+}
+
+/* ~~ Dieser Container mit fester Breite umschließt die anderen div-Tags. ~~ */
+.container {
+	/* 2020-01-01 from 1200 .. to 1400 */
+	width: 1400px;
+	background: #FFF;
+	margin: 0 auto; /* Der mit der Breite gekoppelte automatische Wert an den Seiten zentriert das Layout. */
+}
+
+/* ~~ Für die Kopfzeile wird keine Breite angegeben. Sie erstreckt sich über die gesamte Breite des Layouts. Sie enthält einen Bild-Platzhalter, der durch Ihr eigenes, mit Hyperlink versehenes Logo ersetzt werden sollte. ~~ */
+.header {
+	background: #416680;
+	padding: 20px;
+	color: #FFFFFF;
+}
+
+/* ~~ Dies sind die Layoutinformationen. ~~ 
+
+1) Eine Auffüllung wird nur oben und/oder unten im div-Tag positioniert. Die Elemente innerhalb dieses div-Tags verfügen über eine seitliche Auffüllung. Dadurch müssen Sie keine Box-Modell-Berechnungen durchführen. Zu beachten: Wenn Sie dem div-Tag eine seitliche Auffüllung oder einen Rahmen hinzufügen, werden diese zu der festgelegten Breite addiert und ergeben die *gesamte* Breite. Sie können auch die Auffüllung für das Element im div-Tag entfernen und ein zweites div-Tag ohne Breite und mit der gewünschten Auffüllung im ersten div-Tag einfügen.
+
+*/
+
+.content {
+	padding: 10px 0;
+	color: #555555;
+	background-color: #FFFFFF;
+}
+
+.menue {
+	padding: 10px 0;
+	background-color: #FFFFFF;
+}
+
+/* ~~ Fußzeile ~~ */
+.footer {
+	padding: 20px 0;
+	background: #416680;
+}
+
+/* ~~ Verschiedene float/clear-Klassen ~~ */
+.fltrt {  /* Mit dieser Klasse können Sie ein Element auf der Seite nach rechts fließen lassen. Das fließende Element muss vor dem Element stehen, neben dem es auf der Seite erscheinen soll. */
+	float: right;
+	margin-left: 8px;
+}
+.fltlft { /* Mit dieser Klasse können Sie ein Element auf der Seite nach links fließen lassen. Das fließende Element muss vor dem Element stehen, neben dem es auf der Seite erscheinen soll. */
+	float: left;
+	margin-right: 8px;
+}
+.clearfloat { /* Diese Klasse kann in einem <br />-Tag oder leeren div-Tag als letztes Element nach dem letzten fließenden div-Tag (im #container) platziert werden, wenn #footer entfernt oder aus dem #container herausgenommen wird. */
+	clear:both;
+	height:0;
+	font-size: 1px;
+	line-height: 0px;
+}
+
+/* 2017-02-27 keusgen */
+.button {
+    display: block;
+    width: 115px;
+    height: 25px;
+    background: #4E9CAF;
+    padding: 10px;
+    text-align: center;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+}
+
+
+#tabsK {
+	float:left;
+	width:100%;
+	background:#E7E5E2;
+	font-size:93%;
+	line-height:normal;
+	border-bottom:1px solid #54545C;
+}
+#tabsK ul {
+	margin:0;
+	padding:10px 10px 0 50px;
+	list-style:none;
+}
+#tabsK li {
+	display:inline;
+	margin:0;
+	padding:0;
+}
+#tabsK a {
+	float:left;
+	background:url("tableftK.gif") no-repeat left top;
+	margin:0;
+	padding:0 0 0 4px;
+	text-decoration:none;
+}
+#tabsK a span {
+	float:left;
+	display:block;
+	background:url("tabrightK.gif") no-repeat right top;
+	padding:5px 15px 4px 6px;
+	color:#FFF;
+}
+/* Commented Backslash Hack hides rule from IE5-Mac \*/
+#tabsK a span {
+	float:none;
+}
+
+/* End IE5-Mac hack */
+#tabsK a:hover span {
+	color:#FFF;
+	background-position:100% -42px;
+}
+#tabsK a:hover {
+	background-position:0% -42px;
+}
+#tabsK a:hover span {
+	background-position:100% -42px;
+}
+
+#tabsK #current a {
+	background-position:0% -42px;
+}
+#tabsK #current a span {
+	background-position:100% -42px;
+}
+
+
+table.form {
+	border: 1px solid #000;
+	vertical-align: top;
+}
+table.form th {
+	border-bottom: 1px solid #000;
+}
+table.form td {
+	vertical-align: top;
+}
+
+.normal {
+	font-weight: normal;
+}
+.error {
+	color: #CC0000;
+	border: 1px solid #CC0000;
+}
+.error input {
+	border-color: #CC0000;
+}
+.success {
+	color: #0099CC;
+	border: 1px solid #0099CC;
+}

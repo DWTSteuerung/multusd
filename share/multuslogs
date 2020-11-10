@@ -1,0 +1,85 @@
+#
+# Karl Keusgen
+# 2019-11-11
+#
+# sudo cp multuslogs /etc/logrotate.d/
+# 
+
+/multus/log/multusd.log{
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+
+/multus/log/multusModbus.log{
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/multusLAN.log{
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/OpenVPN.log{
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/multusdClientTemplate.log{
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/multusReadDIDO.log{
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/StatusLED.log{
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/multusLANWANCheck.log {
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/multusOVPNClient_0.log {
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/multusOVPNClient_1.log {
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/OpenVPNCheck.log {
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+

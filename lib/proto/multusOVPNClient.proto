@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+// Karl Keusgen
+// 2020-01-12
+//
+// provides OVPN Clients restarts
+//
+// to compile run
+// python3 -m grpc_tools.protoc --proto_path=. ./multusOVPNClient.proto --python_out=. --grpc_python_out=.
+//
+ 
+service gRPCmultusOVPNClient
+{
+	rpc gRPCGetmultusOVPNClientStatus(EmptyRequestmultusOVPNClient) returns (ProcessStatusMessagemultusOVPNClient) {}
+	rpc gRPCRestartmultusOVPNClient(EmptyRequestmultusOVPNClient) returns (ProcessStatusMessagemultusOVPNClient) {}
+	rpc gRPCgetmultusOVPNCheckVersions(multusOVPNCheckVersions) returns (multusOVPNCheckVersions) {}
+}
+
+// this could be Empty too
+message EmptyRequestmultusOVPNClient
+{
+	string String = 1;
+}
+
+message ProcessStatusMessagemultusOVPNClient
+{
+	bool ProcessOK = 1;
+}
+
+message multusOVPNCheckVersions
+{
+	string SoftwareVersion = 1;
+	string ConfigVersion = 2;
+}
+

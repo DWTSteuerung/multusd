@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+// Karl Keusgen
+// 2019-11-28
+//
+// to compile run
+// python3 -m grpc_tools.protoc --proto_path=. ./LANWANOVPNCheck.proto --python_out=. --grpc_python_out=.
+  
+service gRPCService
+{
+	rpc gRPCGetmultusLANStatus(EmptyRequestmultusLAN) returns (ProcessStatusMessagemultusLAN) {}
+	
+	rpc gRPCGetLANStatus(RequestMessage) returns (ResponseMessage) {}
+	rpc gRPCGetWANStatus(RequestMessage) returns (ResponseMessage) {}
+	rpc gRPCGetOVPNStatus(RequestMessage) returns (ResponseMessage) {}
+	rpc gRPCgetLANWANCheckClientVersions(LANWANOVPNCheckVersions) returns (LANWANOVPNCheckVersions) {}
+}
+
+message ProcessStatusMessagemultusLAN
+{
+	bool ProcessOK = 1;
+}
+
+// this could be Empty too
+message EmptyRequestmultusLAN
+{
+	string String = 1;
+}
+ 
+message RequestMessage
+{
+	string RequestMessageMemberString = 1;
+}
+ 
+message ResponseMessage
+{
+	double TimestampLastCheck = 1;
+	double TimestampLastOK = 2;
+	bool ConnectionStatus = 3;
+	int32 count = 4;
+	bool ValidStatus = 5;
+	//string ResponseMessageMemberString = 1;
+	//bool ResponseMessageMemberBool = 2;
+}
+
+message LANWANOVPNCheckVersions
+{
+	string SoftwareVersion = 1;
+	string ConfigVersion = 2;
+}
+

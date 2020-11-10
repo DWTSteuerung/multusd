@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+// Karl Keusgen
+// 2019-09-24
+//
+// provides Sunset and Sunrise data for a given Position
+//
+// to compile run
+// python3 -m grpc_tools.protoc --proto_path=. ./multusReadDIDO.proto --python_out=. --grpc_python_out=.
+// 
+ 
+service gRPCmultusReadDIDO
+{
+	rpc gRPCGetmultusReadDIDOStatus(EmptyRequestmultusReadDIDO) returns (ProcessStatusMessagemultusReadDIDO) {}
+	rpc gRPCgetmultusReadDIDOVersions(multusReadDIDOVersions) returns (multusReadDIDOVersions) {}
+
+	rpc gRPCSetDigitalOutputs(MessageDigitalStatus) returns (EmptyRequestmultusReadDIDO) {}
+}
+
+message MessageDigitalStatus {
+	int32 DI01 = 1;
+	int32 DI02 = 2;
+	int32 DI03 = 3;
+	int32 DI04 = 4;
+	int32 DI05 = 5;
+	int32 DI06 = 6;
+	int32 DI07 = 7;
+	int32 DI08 = 8;
+}
+
+message ProcessStatusMessagemultusReadDIDO
+{
+	bool ProcessOK = 1;
+}
+
+// this could be Empty too
+message EmptyRequestmultusReadDIDO
+{
+	string String = 1;
+}
+
+message multusReadDIDOVersions
+{
+	string SoftwareVersion = 1;
+	string ConfigVersion = 2;
+}
