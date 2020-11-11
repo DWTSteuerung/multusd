@@ -19,7 +19,7 @@ The configuration files of the child processes can be maintained by a http/php c
 - every multusd child process is supervised and potentially fail-safe
 - every multud child process has a logfile
 - every multusd child process has an easy extendable and user maintainable configuration file
-- No more need to worry about every possible runtime error which may occure.. the process is supervised, it crashes and will be restarted.. It can't be easier, no internal error handling needed
+- No more worrying about every possible runtime error which may occure.. the process is supervised, it crashes and will be restarted.. It can't be easier, no internal error handling needed
 
 
 The framework has been developed for the raspberry pi, but runs on all other unix alike systems (except of the hardware classes, which need to be disabled on PC hardware).
