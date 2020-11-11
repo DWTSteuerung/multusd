@@ -13,7 +13,7 @@ The configuration files of the child processes can be maintained by a http/php c
 
 # Why multusd?
 
-- setup new processes by copying a template process and gainig a lot of standard features right from the start
+- easy setup of new multusd child processes by copying a template process and gainig a lot of standard features right from the start
 - every multusd child process is supervised and potentially fail-safe
 - every multud child process has a logfile
 - every multusd child process has an easy extendable and user maintainable configuration file
@@ -35,6 +35,7 @@ The framework has been developed for the raspberry pi, but runs on all other uni
 - multusdClientTemplate - a template process, which can be take to write new processes and earning the capabilities of this system from the start.. 
 
 see share/MakeItRunAfterClone.txt
+see share/SetupOfmultusdChildProcess.txt
 
 Karl Keusgen
 2019 - 2020
