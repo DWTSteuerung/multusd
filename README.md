@@ -1,6 +1,4 @@
 # multusd
-#
-
 
 Raspberry Pi fail-safe process and hardware handling framework 
 
