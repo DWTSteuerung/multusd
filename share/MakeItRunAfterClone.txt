@@ -3,41 +3,50 @@
 #
 # Steps to proceed after cloning to make this repository run
 
-Link clone directory to /multus
+git clone https://github.com/DWTSteuerung/multusd.git
+
+#Link clone directory to /multus
+# ln -s <PATH TO Clone directory> /multus
 
 sudo mv /var/www/html /var/www/html.old
 sudo ln -s /multus/html /var/www/html
 
-
+# This are the configs
 cp /multus/share/configs/multusd.conf /multus/etc/
-cp /multus/share/configs/BasicInfos.conf /multus/etc/multusd_d/
-cp /multus/share/configs/multusModules.conf /multus/etc/multusd_d/
+cp /multus/share/configs/multusd_d/* /multus/etc/multusd_d/
 
+# make configs writable by apache2 - php
 sudo chmod a+w /multus/etc/multusd_d/*
 
+# enable multusd as a systemd service
 sudo cp /multus/share/multusd.service /etc/systemd/system/
-
 sudo systemctl enable multusd
 
+# make the logs beeing rotated
 sudo cp /multus/share/multuslogs /etc/logrotate.d/
 
+# make dir writable by http
+mkdir /multus/openvpn
 sudo chmod -R a+w /multus/openvpn
 
 mkdir /multus/tmp
-sudo chmod -R a+w /multus/tmp
+chmod -R a+w /multus/tmp
 
 mkdir /multus/log
 mkdir /multus/run
 
-sudo chmod a+x /multus/bin/*.py
-sudo chmod a+x /multus/bin/*.sh
+chmod a+x /multus/bin/*.py
+chmod a+x /multus/bin/*.sh
 
+# run
 /multus/share/DoAllProtoFiles.sh
 
-sudo crontab -e
-Zeile hinzufuegen:
-
-*/10    *   *   *   *   /multus/bin/setrights.sh 
+# make logfiles accessable by http
+#
+# sudo crontab -e
+# add line:
+# 
+# */10    *   *   *   *   /multus/bin/setrights.sh 
 
 cd /multus/html
 git clone https://github.com/potsky/PimpMyLog.git
@@ -45,5 +54,6 @@ mv PimpMyLog logs
 
 cp /multus/share/configs/config.user.php /multus/html/logs
 
-Setup OpenVPN via http
+## we are done
+# Setup OpenVPN via http
 
