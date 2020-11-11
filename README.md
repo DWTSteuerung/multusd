@@ -6,7 +6,7 @@ Raspberry Pi fail-safe process and hardware handling framework
 
 multusd is a daemon process which starts, stops and controlls ist child processes. This is the community version of the DWT project which comes without an overall system status daemon. 
 
-The potential failing, crashing or even hanging of a child process can be surely determined after a configurable, given timespan (200ms - seconds ... depending on the processors capabilities and general system load).
+The potential failing, crashing or even hanging of a child process can be surely determined after a configurable, given timespan (200ms - seconds ... depending on the child process itself, the processors capabilities and the general system load).
 If the child process is in disorder, a certain, configurable system state can be established, the child process will be restarted endlessly.
 
 For inter process communication (IPC) gRPC and protocol-buffers are used.
