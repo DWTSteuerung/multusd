@@ -38,5 +38,7 @@ see share/MakeItRunAfterClone.txt
 
 see share/SetupOfmultusdChildProcess.txt
 
+see share/multusdHandlingAndConfiguration.txt
+
 Karl Keusgen
 2019 - 2020
