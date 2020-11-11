@@ -1,7 +1,6 @@
 # multusd
 #
-# Karl Keusgen
-# 2019 - 2020
+
 
 Raspberry Pi fail-safe process and hardware handling framework
 
@@ -16,3 +15,5 @@ The framework has been developed for the raspberry pi, but runs on all other uni
 
 see share/MakeItRunAfterClone.txt
 
+Karl Keusgen
+2019 - 2020
