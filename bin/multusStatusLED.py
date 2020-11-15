@@ -38,14 +38,14 @@ import multusdTools
 import multusdModuleConfig
 import NetworkStatus
 
-import libStatusLED
+import libmultusStatusLED
 
 ## do the Periodic Alive Stuff
 import multusdControlSocketClient
 
 # 2020-06-01
 # Json config option
-if libStatusLED.UseJsonConfig:
+if libmultusStatusLED.UseJsonConfig:
 	import libmultusdJson
 	import libmultusdJsonModuleConfig
 
@@ -57,7 +57,7 @@ class StatusLEDClass(object):
 		self.ObjmultusdTools = multusdTools.multusdToolsClass()
 
 		## 2020-06-01
-		if libStatusLED.UseJsonConfig:
+		if libmultusStatusLED.UseJsonConfig:
 			# first we get the config of the multusd system
 			self.ObjmultusdConfig = libmultusdJson.multusdJsonConfigClass(ObjmultusdTools = self.ObjmultusdTools)
 			bSuccess = self.ObjmultusdConfig.ReadConfig()
@@ -83,14 +83,14 @@ class StatusLEDClass(object):
 		Ident = "multusStatusLED"
 		for Module in ObjmultusdModulesConfig.AllModules:
 			if Module.ModuleParameter.ModuleIdentifier == Ident:
-				if libStatusLED.UseJsonConfig:
-					self.ObjStatusLEDConfig = libStatusLED.StatusLEDConfigClass(None)
-					bSuccess = self.ObjStatusLEDConfig.ReadJsonConfig(self.ObjmultusdTools, self.ObjmultusdConfig, Ident)
+				if libmultusStatusLED.UseJsonConfig:
+					self.ObjmultusStatusLEDConfig = libmultusStatusLED.StatusLEDConfigClass(None)
+					bSuccess = self.ObjmultusStatusLEDConfig.ReadJsonConfig(self.ObjmultusdTools, self.ObjmultusdConfig, Ident)
 					if not bSuccess:
 						print ("Error getting Json config, we exit")
 						sys.exit(2)
 				else:
-					self.ObjmultusStatusLEDConfig = libStatusLED.StatusLEDConfigClass(Module.ModuleParameter.ModuleConfig)
+					self.ObjmultusStatusLEDConfig = libmultusStatusLED.StatusLEDConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusStatusLEDConfig.ReadConfig()
 					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
@@ -122,7 +122,7 @@ class StatusLEDClass(object):
 			sys.exit(1)
 
 		## get the hardware access
-		self.ObjStatusLEDFunctions = libStatusLED.StatusLEDFunctionsClass(self.ObjmultusStatusLEDConfig, self.ObjmultusdTools)
+		self.ObjmultusStatusLEDFunctions = libmultusStatusLED.StatusLEDFunctionsClass(self.ObjmultusStatusLEDConfig, self.ObjmultusdTools)
 		self.ObjLANWANStatus = NetworkStatus.gRPCLANWANStatusClass(self.ObjmultusdTools)
 		self.ObjOVPNStatus = NetworkStatus.gRPCOVPNStatusClass(self.ObjmultusdTools)
 
@@ -131,7 +131,7 @@ class StatusLEDClass(object):
 		return
 
 	def __del__(self):
-		self.ObjStatusLEDFunctions.LEDOff()
+		self.ObjmultusStatusLEDFunctions.LEDOff()
 
 		try:
 			if not self.StatusLEDIsRunningTwice:
@@ -215,30 +215,30 @@ class StatusLEDClass(object):
 
 			if ConnectionStatus == 0:
 				Counter = 0
-				LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
+				LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOff()
 
 			elif ConnectionStatus == 1:
 				if LEDStatus:
 					Counter = 0
-					LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
+					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOff()
 				else:
 					Counter = 0
-					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
+					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOn()
 
 			elif ConnectionStatus == 2:
 
 				if LEDStatus and Counter >= 3:
 					Counter = 0
-					LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
+					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOff()
 				elif not LEDStatus and Counter >= 3:
 					Counter = 0
-					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
+					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOn()
 
 			elif ConnectionStatus == 3:
 				Counter = 0
 				if not LEDStatus or RefreshCounter >= 120:
 					RefreshCounter = 0	
-					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
+					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOn()
 
 		
 			## Damit ab und zu das LED-Signal aktualisiert wird
@@ -250,8 +250,8 @@ class StatusLEDClass(object):
 
 def DoTheDeamonJob(bDaemon = True):
 
-	ObjStatusLED = StatusLEDClass()  
-	ObjStatusLED.haupt(bDaemon)
+	ObjmultusStatusLED = StatusLEDClass()  
+	ObjmultusStatusLED.haupt(bDaemon)
 
 	return
 

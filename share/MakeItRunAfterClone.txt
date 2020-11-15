@@ -17,7 +17,7 @@ sudo ln -s /multus/html /var/www/html
 cp /multus/share/configs/multusd.conf /multus/etc/
 cp /multus/share/configs/multusd_d/* /multus/etc/multusd_d/
 
-# make configs writable by apache2 - php
+# make configs writable by apache2 and php-config-tool
 chmod a+w /multus/etc/multusd_d/*
 
 # make dir writable by http

@@ -1,0 +1,17 @@
+Metadata-Version: 1.1
+Name: Python-RPi-MCP4922
+Version: 0.3
+Summary: Python code to use the MCP4922 digital to analog converter with a Raspberry Pi.
+Home-page: https://github.com/mrwunderbar666/Python-RPi-MCP4922/
+Author: Paul Balluff
+Author-email: paul.balluff@gmail.com
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - AlphaOperating System :: POSIX :: Linux
+Classifier: License :: OSI Approved :: MIT
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Software Development
+Classifier: Topic :: System :: Hardware

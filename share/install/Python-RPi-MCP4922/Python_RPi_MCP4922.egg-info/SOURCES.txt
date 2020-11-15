@@ -1,0 +1,15 @@
+LICENSE
+README.md
+setup.py
+MCP4922/MCP4922.py
+MCP4922/__init__.py
+Python_RPi_MCP4922.egg-info/PKG-INFO
+Python_RPi_MCP4922.egg-info/SOURCES.txt
+Python_RPi_MCP4922.egg-info/dependency_links.txt
+Python_RPi_MCP4922.egg-info/requires.txt
+Python_RPi_MCP4922.egg-info/top_level.txt
+documentation/Thumbs.db
+documentation/mcp4922sketch_bb.png
+documentation/mcp4922sketch_schem.png
+examples/MCP4922_set.py
+examples/MCP4922_test.py

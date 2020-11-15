@@ -16,7 +16,7 @@ The configuration files of the child processes can be maintained by a http/php c
 - every multud child process has a logfile
 - every multusd child process has an easy extendable and user maintainable configuration file
 - No more worrying about every possible runtime error which may occure.. the process is supervised, it crashes and will be restarted.. It can't be easier, no internal error handling needed
-- Automatic process reload after changing the configuration by php interface
+- Automatic process reload after changing the configuration over the php interface
 
 
 The framework has been developed for the raspberry pi, but runs on all other unix alike systems (except of the hardware classes, which need to be disabled on PC hardware. See multusd on PC harware manual below).
@@ -34,21 +34,25 @@ The framework has been developed for the raspberry pi, but runs on all other uni
 
 # Required packages on PC hardware
 - python3, python3-pip
-- python packages: pip3 install daemonize pymysql grpcio-tools
-- Webserver with php runtime environment
+- python packages: pip3 install daemonize pymysql grpcio-tools psutil
+- Webserver with php runtime environment: apache2 libapache2-mod-php
 - openvpn (optional)
-- mysql database (optional)
+- mysql database: mariadb-server (optional) 
 
 # Additional packages on RPi hardware
-- pip3 install umodbus wiringpi RPi MCP4922 mcp3208
+- pip3 install RPi.GPIO umodbus wiringpi mcp3208
+- install MCP4922 which comes with this repository (share/install dir)
 
 For general setup follow the instructions in:
+
 share/MakeItRunAfterClone.txt
 
 For instructions, how to integrate a new process into multusd see:
+
 share/SetupOfmultusdChildProcess.txt
 
 Some general explanation, of the internal functions of multusd
+
 share/multusdHandlingAndConfiguration.txt
 
 Karl Keusgen
