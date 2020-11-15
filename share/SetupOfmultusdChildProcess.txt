@@ -33,6 +33,7 @@ Seek the section [multusdCLientTemplate]
 Copy this complete section to a new [NewProcess] called section
 Within this new section substitute the string "multusdClientTemplate" against the string "NewProcess" 
 Edit the ModulePHPHeadline Parameter, to get the php headline right.
+Very important: Change the paramter ModuleControlPort to a unique, valid tcp port number
 
 Now you've created a process, which can be run once.
 
@@ -61,6 +62,10 @@ For these new processes, new config files have to be created:
 
 cp /multus/etc/multusd_d/NewProcess_0.conf /multus/etc/multusd_d/NewProcess_1.conf
 cp /multus/etc/multusd_d/NewProcess_0.conf /multus/etc/multusd_d/NewProcess_2.conf
+
+The parameter ModuleControlPort in multusModules.conf will count up from the number in the config. 
+Depending on the instances count, the upcounted port numbers must be systemwide unique, so a suitable start value in
+multusModules.conf has to be chosen
 
 Now login as root an control the number of instances
 
