@@ -90,7 +90,11 @@ pass: admin
 #
 #
 
-
+###############
+#
+# if you intend to do some logging on status changes of digital inputs or
+# outputs, use scripts in share/db for database setup
+# the logging is triggered by events
 
 ##############
 #

@@ -7,10 +7,9 @@
 require $_SERVER['DOCUMENT_ROOT'] .'/CheckUser.php';
 
 // has to be the same, then the identifier in the moduels config file
-$PageIdentifier = "StatusLED";
+$PageIdentifier = "multusStatusLED";
 
 require $_SERVER['DOCUMENT_ROOT'] .'/menu.php';
-
 
 // now we start an Instance of this class directly, if there had none been started so far..
 require $_SERVER['DOCUMENT_ROOT'] .$PageClass;

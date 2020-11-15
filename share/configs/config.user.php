@@ -253,9 +253,9 @@
 				}
 			}
 		},
-		"StatusLED": {
-			"display" : "StatusLED.log",
-			"path"    : "\/multus\/log\/StatusLED.log",
+		"multusStatusLED": {
+			"display" : "multusStatusLED.log",
+			"path"    : "\/multus\/log\/multusStatusLED.log",
 			"refresh" : 5,
 			"max"     : 20,
 			"notify"  : true,

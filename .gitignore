@@ -21,4 +21,7 @@ lib/proto/multusOVPNClient_pb2_grpc.py
 lib/proto/multusReadDIDO_pb2.py
 lib/proto/multusReadDIDO_pb2_grpc.py
 log/
+run/
+openvpn/
+tmp/
 
