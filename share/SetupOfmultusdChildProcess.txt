@@ -32,6 +32,7 @@ purpose we edit:
 Seek the section [multusdCLientTemplate]
 Copy this complete section to a new [NewProcess] called section
 Within this new section substitute the string "multusdClientTemplate" against the string "NewProcess" 
+Edit the ModulePHPHeadline Parameter, to get the php headline right.
 
 Now you've created a process, which can be run once.
 
