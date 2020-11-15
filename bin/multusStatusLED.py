@@ -80,7 +80,7 @@ class StatusLEDClass(object):
 		self.ModuleControlPortEnabled = True
 
 		#WalkThe list of modules to find our configuration files.. 
-		Ident = "StatusLED"
+		Ident = "multusStatusLED"
 		for Module in ObjmultusdModulesConfig.AllModules:
 			if Module.ModuleParameter.ModuleIdentifier == Ident:
 				if libStatusLED.UseJsonConfig:

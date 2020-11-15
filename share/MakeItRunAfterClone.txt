@@ -3,27 +3,22 @@
 #
 # Steps to proceed after cloning to make this repository run
 
+# first clone:
 git clone https://github.com/DWTSteuerung/multusd.git
 
-#Link clone directory to /multus
+# Generate a symbolic link of the clone directory to /multus
 # ln -s <PATH TO Clone directory> /multus
 
+# setup php config environment
 sudo mv /var/www/html /var/www/html.old
 sudo ln -s /multus/html /var/www/html
 
-# This are the configs
+# Copy the configs into place
 cp /multus/share/configs/multusd.conf /multus/etc/
 cp /multus/share/configs/multusd_d/* /multus/etc/multusd_d/
 
 # make configs writable by apache2 - php
-sudo chmod a+w /multus/etc/multusd_d/*
-
-# enable multusd as a systemd service
-sudo cp /multus/share/multusd.service /etc/systemd/system/
-sudo systemctl enable multusd
-
-# make the logs beeing rotated
-sudo cp /multus/share/multuslogs /etc/logrotate.d/
+chmod a+w /multus/etc/multusd_d/*
 
 # make dir writable by http
 mkdir /multus/openvpn
@@ -38,22 +33,73 @@ mkdir /multus/run
 chmod a+x /multus/bin/*.py
 chmod a+x /multus/bin/*.sh
 
-# run
+#########################
+#
+# Some processes are desigend to be run more than once, e.g. the OVPN client
+#
+# depending on the number of demanded OpenVPN clients, there has to be done 
+# some upcounting symbolic links
+ln -s /multus/bin/multusOVPNClient_0.py /multus/bin/multusOVPNClient_1.py
+# generate the corresponding configuration
+cp /multus/share/configs/multusd_d/multusOVPNClient_0.conf /multus/etc/multusd_d/multusOVPNClient_1.conf
+
+#########################
+# build protocol buffers gRPC code
 /multus/share/DoAllProtoFiles.sh
 
-# make logfiles accessable by http
-#
-# sudo crontab -e
-# add line:
-# 
-# */10    *   *   *   *   /multus/bin/setrights.sh 
 
+#########################
+# make logfiles accessable over http
+#
 cd /multus/html
 git clone https://github.com/potsky/PimpMyLog.git
 mv PimpMyLog logs
 
 cp /multus/share/configs/config.user.php /multus/html/logs
 
+#
+sudo crontab -e
+# add line:
+# 
+*/10    *   *   *   *   /multus/bin/setrights.sh 
+
+##############
 ## we are done
-# Setup OpenVPN via http
+# Setup multusd over http
+http://localhost
+
+Login for enabling processes
+user: root
+pass: admin
+
+Login for process configuration
+user: admin
+pass: admin
+
+###############
+#
+# Start of multusd
+#
+# the multusd, which then will start all enabled processes is started by the
+# command:
+/multus/bin/multusd
+#
+# A single process can be started on its own by executing adding -n command line parameter to the
+# executable
+/multus/bin/<Process> -n
+#
+#
+
+
+
+##############
+#
+# you can make the multusd beeing started by systemd automatically
+# enable multusd as a systemd service
+#
+sudo cp /multus/share/multusd.service /etc/systemd/system/
+sudo systemctl enable multusd
+
+# make the logs beeing rotated
+sudo cp /multus/share/multuslogs /etc/logrotate.d/
 

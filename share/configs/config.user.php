@@ -96,6 +96,33 @@
 			}
 		},
 
+		"multusLAN": {
+			"display" : "multusLAN.log",
+			"path"    : "\/multus\/log\/multusLAN.log",
+			"refresh" : 5,
+			"max"     : 20,
+			"notify"  : true,
+			"format"  : {
+				"type"         : "HTTPD 2.2",
+                "regex"        : "|(.*),[0-9]* \\[DEBUG\\] (.*)$|U",
+				"export_title" : "Log",
+				"match"        : {
+                    "Date"     : 1,
+					"Log"      : 2
+				},
+				"types": {
+                    "Date"     : "Y-m-d H:i:s",
+					"IP"       : "ip:http",
+					"Log"      : "preformatted",
+					"Severity" : "badge:severity",
+					"Referer"  : "link"
+				},
+				"exclude": {
+					"Log": ["\/PHP Stack trace:\/", "\/PHP *[0-9]*\\. \/"]
+				}
+			}
+		},
+
 		"multusLANWANCheck": {
 			"display" : "multusLANWANCheck.log",
 			"path"    : "\/multus\/log\/multusLANWANCheck.log",
@@ -199,8 +226,58 @@
 					"Log": ["\/PHP Stack trace:\/", "\/PHP *[0-9]*\\. \/"]
 				}
 			}
+		},
+		"multusModbus": {
+			"display" : "multusModbus.log",
+			"path"    : "\/multus\/log\/multusModbus.log",
+			"refresh" : 5,
+			"max"     : 20,
+			"notify"  : true,
+			"format"  : {
+				"type"         : "HTTPD 2.2",
+                "regex"        : "|(.*),[0-9]* \\[DEBUG\\] (.*)$|U",
+				"export_title" : "Log",
+				"match"        : {
+                    "Date"     : 1,
+					"Log"      : 2
+				},
+				"types": {
+                    "Date"     : "Y-m-d H:i:s",
+					"IP"       : "ip:http",
+					"Log"      : "preformatted",
+					"Severity" : "badge:severity",
+					"Referer"  : "link"
+				},
+				"exclude": {
+					"Log": ["\/PHP Stack trace:\/", "\/PHP *[0-9]*\\. \/"]
+				}
+			}
+		},
+		"StatusLED": {
+			"display" : "StatusLED.log",
+			"path"    : "\/multus\/log\/StatusLED.log",
+			"refresh" : 5,
+			"max"     : 20,
+			"notify"  : true,
+			"format"  : {
+				"type"         : "HTTPD 2.2",
+                "regex"        : "|(.*),[0-9]* \\[DEBUG\\] (.*)$|U",
+				"export_title" : "Log",
+				"match"        : {
+                    "Date"     : 1,
+					"Log"      : 2
+				},
+				"types": {
+                    "Date"     : "Y-m-d H:i:s",
+					"IP"       : "ip:http",
+					"Log"      : "preformatted",
+					"Severity" : "badge:severity",
+					"Referer"  : "link"
+				},
+				"exclude": {
+					"Log": ["\/PHP Stack trace:\/", "\/PHP *[0-9]*\\. \/"]
+				}
+			}
 		}
-
-
 	}
 }

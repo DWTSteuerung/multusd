@@ -1,5 +1,4 @@
 # multusd
-
 Raspberry Pi fail-safe process and hardware handling framework 
 
 multusd is a daemon process which starts, stops and controlls ist child processes. This is the community version of the DWT project which comes without an overall system status daemon. 
@@ -12,35 +11,45 @@ For inter process communication (IPC) gRPC and protocol-buffers are used.
 The configuration files of the child processes can be maintained by a http/php configuration tool.
 
 # Why multusd?
-
 - easy setup of new multusd child processes by copying a template process and gainig a lot of standard features right from the start
 - every multusd child process is supervised and potentially fail-safe
 - every multud child process has a logfile
 - every multusd child process has an easy extendable and user maintainable configuration file
 - No more worrying about every possible runtime error which may occure.. the process is supervised, it crashes and will be restarted.. It can't be easier, no internal error handling needed
+- Automatic process reload after changing the configuration by php interface
 
 
 The framework has been developed for the raspberry pi, but runs on all other unix alike systems (except of the hardware classes, which need to be disabled on PC hardware. See multusd on PC harware manual below).
 
 # With the multusd there come some usefull processes and a process template
-
 - multusd - the daemon
 - multusLAN - LAN configuration via http
 - multusOVPNClient - An OpenVPN client
 - multusLANWANCheck - Process checking LAN and internet access
 - multusOpenVPNCheck - processchecing OpenVPN connectivity
-- status-led - a simple process which indicates the status of LAN and VPN by blinking a GPIO
-- multusModbus - a modbus server for reading and writing GPIOs
-- multusReadDIDO - read in the status of local GPIO inputs, or the status of local GPIO outputs and transfer this status to other similar, network connected multusd devices, so that their outputs go into the same state than the mother system
+- multusStatusLED - a simple process which indicates the status of LAN and VPN by blinking a GPIO (RPi only)
+- multusModbus - a modbus server for reading and writing GPIOs (RPi only)
+- multusReadDIDO - read in the status of local GPIO inputs, or the status of local GPIO outputs and transfer this status to other similar, network connected multusd devices, so that their outputs go into the same state than the mother system (RPi only)
 - multusdClientTemplate - a template process, which can be take to write new processes and earning the capabilities of this system from the start.. 
 
-see share/MakeItRunAfterClone.txt
+# Required packages on PC hardware
+- python3, python3-pip
+- python packages: pip3 install daemonize pymysql grpcio-tools
+- Webserver with php runtime environment
+- openvpn (optional)
+- mysql database (optional)
 
-see share/SetupOfmultusdChildProcess.txt
+# Additional packages on RPi hardware
+- pip3 install umodbus wiringpi RPi MCP4922 mcp3208
 
-see share/multusdHandlingAndConfiguration.txt
+For general setup follow the instructions in:
+share/MakeItRunAfterClone.txt
 
-see share/MakemultusdRunOnPCHardware.txt
+For instructions, how to integrate a new process into multusd see:
+share/SetupOfmultusdChildProcess.txt
+
+Some general explanation, of the internal functions of multusd
+share/multusdHandlingAndConfiguration.txt
 
 Karl Keusgen
 2019 - 2020
