@@ -48,7 +48,7 @@
 	create 0644 admin admin
 }
 
-/multus/log/StatusLED.log{
+/multus/log/multusStatusLED.log{
 	rotate 5
 	size 50k
 	compress
