@@ -43,17 +43,11 @@ The framework has been developed for the raspberry pi, but runs on all other uni
 - pip3 install RPi.GPIO umodbus wiringpi mcp3208
 - install MCP4922 which comes with this repository (share/install dir)
 
-For general setup follow the instructions in:
+For general setup follow the instructions in: share/MakeItRunAfterClone.txt
 
-share/MakeItRunAfterClone.txt
+For instructions, how to integrate a new process into multusd see: share/SetupOfmultusdChildProcess.txt
 
-For instructions, how to integrate a new process into multusd see:
-
-share/SetupOfmultusdChildProcess.txt
-
-Some general explanation, of the internal functions of multusd
-
-share/multusdHandlingAndConfiguration.txt
+Some general explanation, of the internal functions of multusd see: share/multusdHandlingAndConfiguration.txt
 
 Karl Keusgen
 2019 - 2020
