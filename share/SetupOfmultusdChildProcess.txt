@@ -1,0 +1,77 @@
+# 
+# Karl Keusgen
+# 2020-11-15
+#
+
+The easiest way to create new multusd child process is, to descent it from
+multusdClientTemplate.py
+
+First we need the name of the new process which is the identifier of the
+process also.
+
+In this example we choose the term: NewProcess
+
+Do the following copies:
+
+cp /multus/bin/multusdClientTemplate.py /multus/bin/NewProcess.py
+cp /multus/lib/libmultusdClientTemplate.py /multus/lib/libNewProcess.py
+cp /multus/etc/multusd_d/multusdClientTemplate.conf /multus/etc/multusd_d/NewProcess.conf
+cp /multus/html/multusdClientTemplate.php /multus/html/NewProcess.php
+cp /multus/html/Classes/ClassmultusdClientTemplate.php /multus/html/Classes/ClassNewProcess.php
+
+Now open all newly generated files and substitute all occurrencies of the
+string "multusdClientTemplate" against the string "NewProcess" 
+
+Using vim: :%s/multusdClientTemplate/NewProcess/g
+
+
+Now the multusd has to be told, that there is a new child process. For this
+purpose we edit:
+/multus/etc/multusd_d/multusModules.conf
+
+Seek the section [multusdCLientTemplate]
+Copy this complete section to a new [NewProcess] called section
+Within this new section substitute the string "multusdClientTemplate" against the string "NewProcess" 
+
+Now you've created a process, which can be run once.
+
+Login a root to enable or disable this NewProcess
+
+################################################
+
+To make this process run more than just once:
+
+Edit /multus/etc/multusd_d/multusModules.conf seek for [NewProcess] section
+Change the RunOnce parameter from 1 to "". You can use the multusOVPNClient
+section as an example.
+
+mv /multus/bin/NewProcess.py /multus/bin/NewProcess_0.py
+mv /multus/etc/multusd_d/NewProcess_0.conf
+
+Then, depending on the number of instances you want to run from this process,
+you have to generate some symbolic links:
+
+For instance 3 instances of the new process:
+
+ln -s /multus/bin/NewProcess_0.py /multus/bin/NewProcess_1.py
+ln -s /multus/bin/NewProcess_0.py /multus/bin/NewProcess_2.py
+
+For these new processes, new config files have to be created:
+
+cp /multus/etc/multusd_d/NewProcess_0.conf /multus/etc/multusd_d/NewProcess_1.conf
+cp /multus/etc/multusd_d/NewProcess_0.conf /multus/etc/multusd_d/NewProcess_2.conf
+
+Now login as root an control the number of instances
+
+###
+###
+restart multusd: sudo systemctl restart multusd
+###
+###
+
+###################################################
+To make the logfile of the new process by http edit: /multus/html/logs/config.user.php
+
+
+###################################################
+To grant the rotation of the new logfile(s) edit: /etc/logrotate.d/multuslogs

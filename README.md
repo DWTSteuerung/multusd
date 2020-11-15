@@ -60,4 +60,3 @@ Karl Keusgen
 
 Deutsche Windtechnik Steuerung GmbH & Co. KG, Osterport 2f, D-25872 Ostenfeld
 
-

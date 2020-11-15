@@ -1,0 +1,17 @@
+#
+# Karl Keusgen
+# 2020-11-15
+#
+
+The multusd sucks in the /multus/etc/multusd.conf config file. which is the
+only hard coded config.
+
+The multusd.conf is also used from the php interface, as well as from every
+single python process.
+
+The most important config mentioned in the multusd.conf is the multusModulesConfigFile: 
+/multus/etc/multusd_d/multusModules.conf
+
+The multusModulesConfigFile provides all informations about the multusd child
+processes and is edited by the php interface as the root user. 
+
