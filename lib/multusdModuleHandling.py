@@ -140,9 +140,9 @@ class ClassRunModules(object):
 		if self.NoStartupAllowedProcessIsInStrangeState:
 			print ("Process is in strange state: " + str(self.NoStartupAllowedProcessIsInStrangeState))
 		"""
-
+		Timestamp = time.time()
 		# Starting a process
-		if (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and not self.NoStartupAllowedProcessIsInStrangeState and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess:
+		if (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and not self.NoStartupAllowedProcessIsInStrangeState and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess and Timestamp > self.Module.ProcessTimestampToBeRestarted:
 			## first we check, if the process is already running
 			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
 
@@ -150,17 +150,19 @@ class ClassRunModules(object):
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 1 Run a process start procedure for Binary: " + Module.ModuleParameter.ModuleBinary)
 				self.__DoJobBeforeStarting__()
 				self.StartSingleProcess(Module.ModuleParameter)
+				Module.ProcessLastTimeStarted = time.time()
 
 				## Check on the success of the starting procedure
 				self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
 
 			if self.ProcessIsRunning:
 				self.__DoJobAfterStarting__()
-				Module.ProcessLastTimeStarted = time.time()
 			else:
 				## The process or whatever has to be killed...
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 1 Run a process start procedure Binary: " + Module.ModuleParameter.ModuleBinary + " Failed.. process seems not to be running.. we kill it again")
 				self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
+				self.Module.ControlThread.DetermineNextStartupTime()
+
 		# stopping a process
 		elif (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and self.StopProcess:
 			self.StartProcess = False
@@ -186,17 +188,18 @@ class ClassRunModules(object):
 			self.__DoJobAfterStopping__()
 
 			self.StartSingleProcess(Module.ModuleParameter)
+			Module.ProcessLastTimeStarted = time.time()
 			
 			## Check on the success of the starting procedure
 			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
 			if self.ProcessIsRunning:
 				self.ReloadProcess = False
 				self.__DoJobAfterStarting__()
-				Module.ProcessLastTimeStarted = time.time()
 			else:
 				## The process or whatever has to be killed...
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 5 Run a process restart Failed.. we kill process again " + Module.ModuleParameter.ModuleBinary)
 				self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
+				self.Module.ControlThread.DetermineNextStartupTime()
 
 		# Periodic Check by script, if there is one
 		elif (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and Module.ModuleParameter.ModulePeriodicCheckEnabled and (self.NextCheckToDo < time.time()):
@@ -211,10 +214,12 @@ class ClassRunModules(object):
 			self.ProcessIsRunning = self.CheckStatusSingleProcessByScript(Module.ModuleParameter.ModuleStatusScript, Module.ModuleParameter.ModuleStatusScriptParameter)
 		## the Status Check by PID from PIDFile is done independently, if a regular Check is also done
 		# periodic check against the PID kill 0
-		if (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and Module.ModuleParameter.ModuleStatusByPIDFileEnable and (self.NextPIDStatusToDo < time.time()):
+		if self.ProcessIsRunning and (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and Module.ModuleParameter.ModuleStatusByPIDFileEnable and (self.NextPIDStatusToDo < time.time()):
 			#print ("Want to run ")
 			# In the End, after the CHecking Process was done, we check the status
 			self.ProcessIsRunning = self.CheckStatusSingleProcessByPIDFile(Module.ModuleParameter)
+			if not self.ProcessIsRunning:
+				self.Module.ControlThread.DetermineNextStartupTime()
 			self.NextPIDStatusToDo = time.time() + Module.ModuleParameter.ModuleStatusByPIDFilePeriod
 
 		return

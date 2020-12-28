@@ -28,6 +28,12 @@ class ClassControlPortThread(threading.Thread):
 		self.ObjmultusdTools.logger.debug("Started up multusdControlPortThread.ClassControlPortThread Thread " + self.ThreadName + " Task ident: " + str(threading.current_thread().ident))
 
 		self.ControlPortNeverConnected = True
+
+		# 2020-12-02
+		# strange error on multusdJson... controlsocket communication does not start properly
+		self.JustConnected = False
+		self.ErrorsAfterFirstConnected = 0
+		self.MaxErrorsAfterFirstConnected = 200
 	
 		self.bTimeout = False
 		self.connection	= None
@@ -36,8 +42,9 @@ class ClassControlPortThread(threading.Thread):
 		self.TimestampNextSelectReturnExpectedOffset = 0.05
 		self.TimestampNextSelectReturnExpected = 0.0
 
-		## At Startup we can wait up to 15.0 seconds longer, than normally
-		self.StartupOffset = 15.0
+		## slow internet connections to fetch the config
+		## At Startup we can wait up to 30.0 seconds longer, than normally
+		self.StartupOffset = 30.0
 
 		return
 
@@ -109,9 +116,48 @@ class ClassControlPortThread(threading.Thread):
 			i = i - 1	
 		return
 
+	def DetermineNextStartupTime(self):
+
+		self.Module.ProcessTimestampLastCrashed = time.time()
+		TimeSiceLatestStart = self.Module.ProcessTimestampLastCrashed - self.Module.ProcessLastTimeStarted
+
+		## We should run at least 60 seconds.. otherwise we will delay the next start
+		if not self.Module.ProcessCrashCounter:
+			# restart immediatly if crashed for the first time
+			self.Module.ProcessTimestampToBeRestarted = time.time()
+			self.ObjmultusdTools.logger.debug("Error Thread: " + self.ThreadName + " first crash after " + str(TimeSiceLatestStart) + " seconds ... We restart immediatly")
+	
+		# we already crashed within the last 3 hours
+		elif  self.Module.ProcessCrashCounter <= 3:
+			# restart after 10 second delay
+			self.Module.ProcessTimestampToBeRestarted = time.time() + 10.0
+			self.ObjmultusdTools.logger.debug("Error Thread: " + self.ThreadName + " repeated crash after " + str(TimeSiceLatestStart) + " seconds... We restart with 10 second delay")
+			
+		elif self.Module.ProcessCrashCounter > 3 and self.Module.ProcessCrashCounter <= 6:
+			## We delay one minute
+			self.Module.ProcessTimestampToBeRestarted = time.time() + 60.0
+			self.ObjmultusdTools.logger.debug("Error Thread: " + self.ThreadName + " repeated crash after " + str(TimeSiceLatestStart) + " seconds... We restart with 60 second delay")
+
+		elif self.Module.ProcessCrashCounter > 6 and self.Module.ProcessCrashCounter <= 10:
+			## We delay 10 minutes
+			self.Module.ProcessTimestampToBeRestarted = time.time() + 600.0
+			self.ObjmultusdTools.logger.debug("Error Thread: " + self.ThreadName + " repeated crash after " + str(TimeSiceLatestStart) + " seconds... We restart with 600 second delay")
+
+		elif self.Module.ProcessCrashCounter > 10:
+			## We delay 60 minutes
+			self.Module.ProcessTimestampToBeRestarted = time.time() + 3600.0
+			self.ObjmultusdTools.logger.debug("Error Thread: " + self.ThreadName + " repeated crash after " + str(TimeSiceLatestStart) + " seconds... We restart with 3600 second delay")
+
+		self.Module.ProcessCrashCounter += 1
+
+		return
+
 	def DoTimoutForcedProcedure(self):
 		# First we call the Fail-Safe function
 		self.Module.Thread.ObjFailSafeFunctions.SetIntoFailSafeState(False)
+
+		## 2020-12-17
+		self.DetermineNextStartupTime()
 
 		# Then we stop the process
 		# within the stop procedure a second fail-safe procedure call is done
@@ -127,7 +173,7 @@ class ClassControlPortThread(threading.Thread):
 
 			SelectTimeout = self.Module.ModuleParameter.ModuleControlMaxAge + self.StartupOffset
 			## no hanging in the accept, if the process is not running
-			if self.Module.Thread and self.Module.Thread.StartProcess and self.Module.Thread.ProcessIsRunning and not self.Module.Thread.StopProcess and not self.Module.Thread.ReloadProcess and not self.Module.Thread.NoStartupAllowedProcessIsInStrangeState and not self.Module.Thread.Shutdown:
+			if self.Module.Thread and self.Module.Thread.StartProcess and self.Module.Thread.ProcessIsRunning and not self.Module.Thread.StopProcess and not self.Module.Thread.ReloadProcess and not self.Module.Thread.NoStartupAllowedProcessIsInStrangeState and not self.Module.Thread.Shutdown and time.time() > self.Module.ProcessTimestampToBeRestarted:
 
 				## we need this initialisation otherwise it can come to an never ending loop 
 				TimestampLatestReceive = time.time() + SelectTimeout
@@ -155,9 +201,17 @@ class ClassControlPortThread(threading.Thread):
 					
 					if not readable:
 						TheTimeItTook = time.time() - TimestampLatestReceive
-						self.ObjmultusdTools.logger.debug("Error Thread: " + self.ThreadName + " TIMEOUT Sockets, there is nothing readable .... we break .. Time since last Reading: " + str(TheTimeItTook) + " s")
-						self.bTimeout = True
-						break
+
+						# 2020-12-20 .. just connected parameter because of sudden strange errors
+						if not self.JustConnected and self.ErrorsAfterFirstConnected >= self.MaxErrorsAfterFirstConnected:
+							self.ObjmultusdTools.logger.debug("Error Thread: " + self.ThreadName + " TIMEOUT Sockets, there is nothing readable .... we break .. Time since last Reading: " + str(TheTimeItTook) + " s  Select Timout is set to: " + str(SelectTimeout) + " s Config Param MaxAge: " + str(self.Module.ModuleParameter.ModuleControlMaxAge))
+							self.bTimeout = True
+							break
+						elif self.JustConnected and self.ErrorsAfterFirstConnected < self.MaxErrorsAfterFirstConnected:
+							self.ErrorsAfterFirstConnected += 1
+							self.ObjmultusdTools.logger.debug("Error Thread: " + self.ThreadName + " TIMEOUT Sockets, there is nothing readable .... Ignore Error because just connected: " + str(self.JustConnected) + " ErrorCounter: " + str(self.ErrorsAfterFirstConnected) + " Max allowed errors after connect: " + str(self.MaxErrorsAfterFirstConnected))
+						else:
+							self.JustConnected = False
 					else:	
 						for SingleSocket in readable:
 							## maybe we have to connect first
@@ -169,18 +223,35 @@ class ClassControlPortThread(threading.Thread):
 									self.ControlPortNeverConnected = False
 
 									self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " connection from " + client_address[0] + ":" + str(client_address[1]))
+									self.JustConnected = True
 								except:
 									self.bTimeout = True
 									break
 									
 							else:
 								try: 
+									if self.JustConnected:
+										self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " Reset JustConnected Flag... we received something for the first time ... seems so")
+										self.JustConnected = False
+										# we can reset this counter too....
+										self.ErrorsAfterFirstConnected = 0
+
+									# read the data
 									data = SingleSocket.recv(1)
 
 									if data:
+										# regular.. everything is alright
 										TimestampReceived = time.time()
 										TheTimeItTook = TimestampReceived - TimestampLatestReceive
 										TimestampLatestReceive = TimestampReceived
+
+										# 2020-12-17
+										if self.Module.ProcessCrashCounter:
+											TimeSiceLatestStart = TimestampReceived - self.Module.ProcessLastTimeStarted
+											#after a 3 hour run, we reset error counter
+											if TimeSiceLatestStart > 10800.0:
+												self.Module.ProcessCrashCounter = 0
+
 										#print ("Thread: " + self.ThreadName + " received: " + str(data) + " Time: " + str(TheTimeItTook) + " s")
 
 									#Check whether the timespan between the receives, even if there had notheing been received

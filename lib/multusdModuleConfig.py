@@ -65,6 +65,11 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 			self.ThreadLastTimeStarted = 0.0
 			self.ControlThreadLastTimeStarted = 0.0
 			self.ProcessLastTimeStarted = 0.0
+			## 2020-12-17
+			self.ProcessTimestampLastCrashed = 0.0
+			self.ProcessCrashCounter = 0
+			self.ProcessTimestampToBeRestarted = 0.0
+
 			self.ControlThread = None # variable to keep the pointer on the THread running the listening Control Port
 			self.ControlThreadErrorLoggingDone = False
 			self.Thread = None # variable to keep the pointer on the thread instance lateron, the thread starting and stopping the process

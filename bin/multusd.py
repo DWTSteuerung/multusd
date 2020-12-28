@@ -185,7 +185,7 @@ class ClassOperateModules(object):
 					self.ObjmultusdTools.logger.debug("Error at join() shutting down Thread for " + ServiceModule.ModuleParameter.ModuleIdentifier + " : " + ErrorString)
 
 		return 
-
+    
 	############################################################################################################
 	def __StartSingleControlThread__(self, ServiceModule):
 		## If there is a ControlPortThread, we first start the control Port thread
@@ -456,7 +456,8 @@ class ClassOperateModules(object):
 									ServiceModule.ControlThreadErrorLoggingDone = True
 
 								## One reason for the too fast Respawnig could be a problem with the control socket.. let's kill the corresponding Process
-								if ServiceModule.Thread:
+								# 2020-12-28
+								if ServiceModule.Thread and ServiceModule.Thread.ProcessIsRunning:
 									ServiceModule.Thread.StopProcess = True
 
 						except:
