@@ -30,6 +30,7 @@ The framework has been developed for the raspberry pi, but runs on all other uni
 - multusStatusLED - a simple process which indicates the status of LAN and VPN by blinking a GPIO (RPi only)
 - multusModbus - a modbus server for reading and writing GPIOs (RPi only)
 - multusReadDIDO - read in the status of local GPIO inputs, or the status of local GPIO outputs and transfer this status to other similar, network connected multusd devices, so that their outputs go into the same state than the mother system (RPi only)
+- multusDeleteDuplicates - find and delete duplicates (md5 fingerprint), i used to clean up my photos (50.000 out of 120.000 were duplicates) ... mysql based
 - multusdClientTemplate - a template process, which can be take to write new processes and earning the capabilities of this system from the start.. 
 
 # Required packages on PC hardware

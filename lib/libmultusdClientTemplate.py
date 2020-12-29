@@ -126,19 +126,34 @@ class multusdClientTemplateOperateClass(object):
 		
 		return
 
+############################################################
 	def __del__(self):
 		print ("leaving multusdClientTemplateOperateClass")
 		pass
 
-	def Operate(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
+############################################################
+	def DoPeriodicMessage(self):
+		if self.periodic:
+			Timestamp = time.time()
+			if Timestamp >= self.TimestampNextmultusdPing:
+				self.periodic.SendPeriodicMessage()
+				self.TimestampNextmultusdPing = time.time() + self.multusdPingInterval
+				
+			if self.periodic.WeAreOnError:
+				self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
+				self.KeepThreadRunning = False
+		return 
 
+############################################################
+	def Operate(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
+		self.multusdPingInterval = multusdPingInterval
 		## setup the periodic alive mnessage stuff
-		periodic = None
+		self.periodic = None
 		if bPeriodicEnable:
 			print ("Setup the periodic Alive messages")
-			TimestampNextmultusdPing = time.time()
-			periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
-			if not periodic.ConnectFeedbackSocket():
+			self.TimestampNextmultusdPing = time.time()
+			self.periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
+			if not self.periodic.ConnectFeedbackSocket():
 				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
 				sys.exit(1)
 
@@ -150,15 +165,10 @@ class multusdClientTemplateOperateClass(object):
 
 		while self.KeepThreadRunning:
 			
-			Timestamp = time.time()
-			if periodic and Timestamp >= TimestampNextmultusdPing:
-				periodic.SendPeriodicMessage()
-				TimestampNextmultusdPing = time.time() + multusdPingInterval
-				
-				if periodic.WeAreOnError:
-					self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
-					self.KeepThreadRunning = False
-
+			self.DoPeriodicMessage()
+			
+			## place your code for individual actions here
+			
 			time.sleep (SleepingTime)
 
 		return
