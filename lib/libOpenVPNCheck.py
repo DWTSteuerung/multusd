@@ -298,7 +298,9 @@ class gRPCOperateClass(object):
 				OldProcessHealthStatus = self.ObjOVPNConnectionChecks.ProcessHealthStatus
 			elif self.ObjmultusOpenVPNCheckConfig.dBNKEnabled:
 				self.ObjdBNKStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, self.ObjOVPNConnectionChecks.ProcessHealthStatus, bForce = False)
-			time.sleep (SleepingTime)
+
+			if self.KeepThreadRunning:
+				time.sleep (SleepingTime)
 
 		self.ObjmultusdTools.logger.debug('gRPCService Server Stopped ...')
 

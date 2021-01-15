@@ -224,7 +224,7 @@ class multusLANOperateClass(object):
 			DoSleep, WeDoItCounter = self.CheckReloadNetwork(WeDoItCounter)
 
 
-			if DoSleep:
+			if DoSleep and self.KeepThreadRunning:
 				time.sleep (SleepingTime)
 
 		return

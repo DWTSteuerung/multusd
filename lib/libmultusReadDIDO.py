@@ -342,6 +342,7 @@ class multusReadDIDOOperateClass(object):
 					NextPeriodicTransfer = Timestamp + self.ObjmultusReadDIDOConfig.TransferInterval
 					self.ObjmultusReadDIDOHandling.DIStatusOld = self.ObjmultusReadDIDOHandling.DIStatus
 
-			time.sleep (SleepingTime)
+			if self.KeepThreadRunning:
+				time.sleep (SleepingTime)
 
 		return

@@ -362,7 +362,8 @@ class multusDeleteDuplicatesOperateClass(object):
 
 				NextPathCheck = time.time() + float(self.ObjmultusDeleteDuplicatesConfig.IntervalToCheck) 
 
-			time.sleep (SleepingTime)
+			if self.KeepThreadRunning:
+				time.sleep (SleepingTime)
 
 		# change back
 		os.chdir(SavedPath)

@@ -359,7 +359,8 @@ class gRPCOperateClass(object):
 			elif self.ObjmultusLANWANCheckConfig.dBNKEnabled:
 				self.ObjdBNKStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = False)
 
-			time.sleep (SleepingTime)
+			if self.KeepThreadRunning:
+				time.sleep (SleepingTime)
 
 		self.ObjmultusdTools.logger.debug('gRPCService Server Stopped ...')
 

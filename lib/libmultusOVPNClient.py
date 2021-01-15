@@ -271,7 +271,8 @@ class multusOVPNClientOperateClass(object):
 					self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
 					self.KeepThreadRunning = False
 	
-			time.sleep (SleepingTime)
+			if self.KeepThreadRunning:
+				time.sleep (SleepingTime)
 
 		## We stop the OVPN Process
 		if self.ObjmultusOVPNClientConfig.OpenVPNEnable:

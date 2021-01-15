@@ -169,6 +169,7 @@ class multusdClientTemplateOperateClass(object):
 			
 			## place your code for individual actions here
 			
-			time.sleep (SleepingTime)
+			if self.KeepThreadRunning:
+				time.sleep (SleepingTime)
 
 		return
