@@ -35,7 +35,7 @@ The framework has been developed for the raspberry pi, but runs on all other uni
 
 # Required packages on PC hardware
 - python3, python3-pip
-- python packages: pip3 install daemonize pymysql grpcio-tools psutil
+- python packages: pip3 install daemonize pymysql grpcio-tools psutil pathlib
 - Webserver with php runtime environment: apache2 libapache2-mod-php
 - openvpn (optional)
 - mysql database: mariadb-server (optional) 
