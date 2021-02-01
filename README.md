@@ -51,7 +51,7 @@ For instructions, how to integrate a new process into multusd see: share/SetupOf
 Some general explanation, of the internal functions of multusd see: share/multusdHandlingAndConfiguration.txt
 
 Karl Keusgen
-2019 - 2020
+2019 - 2021
 
 Deutsche Windtechnik Steuerung GmbH & Co. KG, Osterport 2f, D-25872 Ostenfeld
 
