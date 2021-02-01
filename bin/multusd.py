@@ -467,7 +467,7 @@ class ClassOperateModules(object):
 					# 2020-01-22
 					# check whether all select timings are done right
 					# HWWatchdog related
-					elif self.bContinueCheckingOfThreads and ServiceModule.Thread.ProcessIsRunning and ServiceModule.ModuleParameter.ModuleControlPortEnabled and ServiceModule.ControlThread.TimestampNextSelectReturnExpected > 0.0 and ServiceModule.ControlThread.TimestampNextSelectReturnExpected < Timestamp and not ServiceModule.ControlThread.bTimeout and not ServiceModule.Thread.Shutdown and not ServiceModule.Thread.ReloadProcess:
+					elif self.bContinueCheckingOfThreads and ServiceModule.Thread and ServiceModule.ControlThread and ServiceModule.Thread.ProcessIsRunning and ServiceModule.ModuleParameter.ModuleControlPortEnabled and ServiceModule.ControlThread.TimestampNextSelectReturnExpected > 0.0 and ServiceModule.ControlThread.TimestampNextSelectReturnExpected < Timestamp and not ServiceModule.ControlThread.bTimeout and not ServiceModule.Thread.Shutdown and not ServiceModule.Thread.ReloadProcess:
 						
 						## 2021-01-25
 						## calls SW Watchdog ... the child process seems to be doomed and all the select seems to hang
