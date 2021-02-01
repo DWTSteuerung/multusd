@@ -34,9 +34,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # 2020-06-01
 # Json config option
-if libmultusLAN.UseJsonConfig:
-	import libmultusdJson
-	import libmultusdJsonModuleConfig
+#import libmultusdJson
+#import libmultusdJsonModuleConfig
 
 ## 2019-12-30
 ## We want to run more, then just 1 instace of each process
@@ -107,9 +106,14 @@ class multusLANClass(object):
 					self.ObjmultusLANConfig.ReloadNetworkFile = self.ObjmultusdTools.multusdTMPDirectory + "/" + Ident + "/ReloadNetwork"
 
 				self.ObjmultusLANConfig.Ident = Ident
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				
+				## 2021-01-31 .. extended it by the PID file control
+				self.ObjmultusLANConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjmultusLANConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled 
+				self.ObjmultusLANConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				## end modification
+
 				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
-				self.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
 				break
 
 		self.LogFile = self.ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -125,13 +129,13 @@ class multusLANClass(object):
 
 		## Do the PIDFIle
 		try:
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjmultusLANConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjmultusLANConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjmultusLANConfig.LPIDFile)
 			self.ProcessIsRunningTwice = False
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.LPIDFile)
+			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.ObjmultusLANConfig.LPIDFile)
 			sys.exit(1)
 
 		self.ObjmultusdTools.logger.debug("Started up.. initializing finished")
@@ -141,7 +145,7 @@ class multusLANClass(object):
 	def __del__(self):
 		try:
 			if not self.ProcessIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjmultusLANConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools .FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -163,7 +167,7 @@ class multusLANClass(object):
 	def haupt (self, bDaemon):
 
 		PercentageOff = 80.0 
-		multusdPingInterval = self.ModuleControlMaxAge - (self.ModuleControlMaxAge * PercentageOff/100.0)
+		multusdPingInterval = self.ObjmultusLANConfig.ModuleControlMaxAge - (self.ObjmultusLANConfig.ModuleControlMaxAge * PercentageOff/100.0)
 		print ("multus Ping Interval: " + str(multusdPingInterval))
 
 		self.ObjmultusLANOperate = libmultusLAN.multusLANOperateClass(self.ObjmultusLANConfig, self.ObjmultusdTools)

@@ -29,6 +29,9 @@ import json
 # it is mandatory for each native multusd process, who uses the controlPort function
 # to have a class like this
 #
+# the failsafe class will be loaded and executed, if the Process check is done by the control port option
+# the other checks like check by PID file timstamp or kill 0 can be used simultaniously and sometimes it is necessarry to have more then 
+# just one method of process check
 class FailSafeClass(object):
 	def __init__(self, Tools, ModuleConfig, Ident, dBNKEnabled):
 		
@@ -60,7 +63,10 @@ class multusdClientTemplateConfigClass(multusdBasicConfigfileStuff.ClassBasicCon
 
 		self.ConfigFile = ConfigFile
 		self.SoftwareVersion = "1"
-	
+		
+		self.ModuleControlPortEnabled = True
+		self.ModuleControlFileEnabled = False
+
 		return
 
 	def ReadConfig(self):
@@ -132,30 +138,53 @@ class multusdClientTemplateOperateClass(object):
 		pass
 
 ############################################################
-	def DoPeriodicMessage(self):
-		if self.periodic:
-			Timestamp = time.time()
+	def DoPeriodicMessage(self, bPeriodicEnable):
+		Timestamp = time.time()
+
+		## first we do the control port stuff and talk to the multud
+		if bPeriodicEnable and self.ObjPeriodic:
 			if Timestamp >= self.TimestampNextmultusdPing:
-				self.periodic.SendPeriodicMessage()
+				self.ObjPeriodic.SendPeriodicMessage()
 				self.TimestampNextmultusdPing = time.time() + self.multusdPingInterval
 				
-			if self.periodic.WeAreOnError:
+			if self.ObjPeriodic.WeAreOnError:
 				self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
 				self.KeepThreadRunning = False
-		return 
+
+		# 2021-01-31
+		# Addition do the PID file touch stuff as well
+		# the multusd checks the timestamp of the PID file.. it should not be too old..
+		if self.ObjPeriodic:
+			self.ObjPeriodic.DoCheckByTouch(Timestamp)
+
+		return
 
 ############################################################
 	def Operate(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
 		self.multusdPingInterval = multusdPingInterval
 		## setup the periodic alive mnessage stuff
-		self.periodic = None
+		self.ObjPeriodic = None
 		if bPeriodicEnable:
 			print ("Setup the periodic Alive messages")
 			self.TimestampNextmultusdPing = time.time()
-			self.periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
-			if not self.periodic.ConnectFeedbackSocket():
+			self.ObjPeriodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
+			if not self.ObjPeriodic.ConnectFeedbackSocket():
 				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
 				sys.exit(1)
+
+		# 2021-01-31 
+		# do the touch thing to check alive status even if no control socket is activated
+		if self.ObjmultusdClientTemplateConfig.ModuleControlFileEnabled:
+			## maybe we do the checking only by timstamp of PID file and not by control port
+			if not self.ObjPeriodic:
+																									# dummy parameters
+				self.ObjPeriodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', 888)
+			
+			## initialize the timspamp based stuff
+																			## We do it twice as often as required, to ease the checking
+			self.ObjPeriodic.InitCheckByThouch(self.ObjmultusdClientTemplateConfig.LPIDFile, (self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge / 2.0))
+		# End Timstamp based process check
+		###########
 
 		# 2020-01-01
 		# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
@@ -163,12 +192,21 @@ class multusdClientTemplateOperateClass(object):
 		if multusdPingInterval > 1.0:
 			SleepingTime = 1.0
 
+		## for test purpose only
+		NotToDoCounter = 0
+
+		# here comes the endless loop
 		while self.KeepThreadRunning:
 			
-			self.DoPeriodicMessage()
+			## We do the periodic messages and stuff to indicate that we are alive for the multusd
+			self.DoPeriodicMessage(bPeriodicEnable)
 			
+			## TODO
 			## place your code for individual actions here
-			
+			##
+
+
+			## End
 			if self.KeepThreadRunning:
 				time.sleep (SleepingTime)
 

@@ -21,6 +21,15 @@ class ClassControlSocketClient(object):
 
 		self.WeAreOnError = False
 		self.WeAreOnErrorOld = self.WeAreOnError
+		## 2021-01-30
+		## send a message which can be calculated and checked
+		self.Counter = 1
+
+		## 2021-01-31
+		## setup additional schecking b
+		self.bCheckByTouchInitialized = False
+		self.bFailureLOggingDone = False
+
 		return
 
 	def ConnectFeedbackSocket(self):
@@ -62,12 +71,17 @@ class ClassControlSocketClient(object):
 	def SendPeriodicMessage(self):
 		try:
 			print ("connecting to " + str(self.ServerAddress[0]) + " + port: " + str(self.ServerAddress[1]))
-			self.sock.sendall(bytes(1))
+			self.sock.send(bytes([self.Counter]))
 			self.WeAreOnError = False
 			if self.WeAreOnErrorOld != self.WeAreOnError:
 				self.ObjmultusdTools.logger.debug(str(os.getpid()) + " After Error sending periodic messages succeeded again")
 				self.WeAreOnErrorOld = self.WeAreOnError
-		
+
+			if self.Counter < 9:
+				self.Counter += 1
+			else:
+				self.Counter = 1
+
 		except:
 			self.WeAreOnError = True
 			if self.WeAreOnErrorOld != self.WeAreOnError:
@@ -76,4 +90,29 @@ class ClassControlSocketClient(object):
 				self.WeAreOnErrorOld = self.WeAreOnError
 		return
 
+	# 2021-01-31
+	# added the functionality of touching and checking files as a way to furure out whether the process is still running
+	# or not
+	# to do this only by the socket thing may not be sufficient in all cases.. hard to believe, but processes can crash so 
+	# strangely..
 
+	# do the peridic touch on a file
+	def InitCheckByThouch(self, TouchFile, Interval):
+		import pathlib
+		self.ObjTouchFile = pathlib.Path(TouchFile)
+		self.Interval = Interval
+		self.TimestampNextTouch = 0.0
+
+		self.bFailureLOggingDone = False
+		self.bCheckByTouchInitialized = True
+
+	def DoCheckByTouch(self, Timestamp):
+		if self.bCheckByTouchInitialized:
+			if self.TimestampNextTouch < Timestamp:
+				self.ObjTouchFile.touch()
+				self.TimestampNextTouch = Timestamp + self.Interval
+
+		elif not self.bFailureLOggingDone:
+			self.ObjmultusdTools.logger.debug(str(os.getpid()) + " Error doing touch thing, because not initialized yet")
+			self.bFailureLOggingDone = True
+			

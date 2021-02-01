@@ -468,6 +468,14 @@ class ClassOperateModules(object):
 					# check whether all select timings are done right
 					# HWWatchdog related
 					elif self.bContinueCheckingOfThreads and ServiceModule.Thread.ProcessIsRunning and ServiceModule.ModuleParameter.ModuleControlPortEnabled and ServiceModule.ControlThread.TimestampNextSelectReturnExpected > 0.0 and ServiceModule.ControlThread.TimestampNextSelectReturnExpected < Timestamp and not ServiceModule.ControlThread.bTimeout and not ServiceModule.Thread.Shutdown and not ServiceModule.Thread.ReloadProcess:
+						
+						## 2021-01-25
+						## calls SW Watchdog ... the child process seems to be doomed and all the select seems to hang
+						if not ServiceModule.Thread.ForceSWWatchdogProcedure:
+							self.ObjmultusdTools.logger.debug("multusd: XXXL Fatal Error ControlThread: " + ServiceModule.ModuleParameter.ModuleIdentifier + " took too long.. overlap (s):  " + str(Timestamp - ServiceModule.ControlThread.TimestampNextSelectReturnExpected) + " SW Watchdog functionality called .. we force stopping child process")
+
+							ServiceModule.Thread.ForceSWWatchdogProcedure = True
+
 						if self.multusdConfig.GeneralHWWatchdogIsEnabled:
 							## TODO
 							## 2020-07-24

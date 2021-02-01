@@ -83,7 +83,6 @@ class multusdClientTemplateClass(object):
 
 		self.ProcessIsRunningTwice = True
 		self.ModuleControlPort = 43000
-		self.ModuleControlPortEnabled = True
 
 		#WalkThe list of modules to find our configuration files.. 
 		BasicIdent = "multusdClientTemplate"
@@ -106,12 +105,17 @@ class multusdClientTemplateClass(object):
 					self.ObjmultusdClientTemplateConfig = libmultusdClientTemplate.multusdClientTemplateConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusdClientTemplateConfig.Instance = Instance
 					self.ObjmultusdClientTemplateConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjmultusdClientTemplateConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusdClientTemplateConfig.Ident = Ident
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
 				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
-				self.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				
+				## 2021-01-31 .. extended it by the PID file control
+				self.ObjmultusdClientTemplateConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjmultusdClientTemplateConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled 
+				self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				## end modification
+
 				break
 
 		self.LogFile = self.ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -127,13 +131,13 @@ class multusdClientTemplateClass(object):
 
 		## Do the PIDFIle
 		try:
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjmultusdClientTemplateConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjmultusdClientTemplateConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjmultusdClientTemplateConfig.LPIDFile)
 			self.ProcessIsRunningTwice = False
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.LPIDFile)
+			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.ObjmultusdClientTemplateConfig.LPIDFile)
 			sys.exit(1)
 
 		self.ObjmultusdTools.logger.debug("Started up.. initializing finished")
@@ -143,7 +147,7 @@ class multusdClientTemplateClass(object):
 	def __del__(self):
 		try:
 			if not self.ProcessIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjmultusdClientTemplateConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools .FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -165,11 +169,11 @@ class multusdClientTemplateClass(object):
 	def haupt (self, bDaemon):
 
 		PercentageOff = 80.0 
-		multusdPingInterval = self.ModuleControlMaxAge - (self.ModuleControlMaxAge * PercentageOff/100.0)
+		multusdPingInterval = self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge - (self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge * PercentageOff/100.0)
 		print ("multus Ping Interval: " + str(multusdPingInterval))
 
 		self.ObjmultusdClientTemplateOperate = libmultusdClientTemplate.multusdClientTemplateOperateClass(self.ObjmultusdClientTemplateConfig, self.ObjmultusdTools)
-		self.ObjmultusdClientTemplateOperate.Operate(multusdPingInterval, bDaemon and self.ModuleControlPortEnabled, self.ModuleControlPort)
+		self.ObjmultusdClientTemplateOperate.Operate(multusdPingInterval, bDaemon and self.ObjmultusdClientTemplateConfig.ModuleControlPortEnabled, self.ModuleControlPort)
 
 		print ("Exiting multusdClientTemplate Main-Program")
 

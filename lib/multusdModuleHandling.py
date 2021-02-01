@@ -59,6 +59,11 @@ class ClassRunModules(object):
 		## delay in process supervising loop
 		## standard and maximum value
 		self.SleepingTime = 1.0
+
+		## 2021-01-24
+		## SW Watchdog limitation
+		self.ForceSWWatchdogProcedure = False
+
 		return
 
 	############################################################################################################
@@ -133,6 +138,26 @@ class ClassRunModules(object):
 
 		return PIDList
 
+	## 2021-01-31
+	###### Verify the corret age of a controlfile
+	def InitVerifyAge(self, TouchFile):
+		import pathlib
+		self.ObjTouchFileV = pathlib.Path(TouchFile)
+
+	def VerifyCorrectAgeOfTouchFile(self, ModuleControlMaxAge):
+		bSuccess = False
+		# We add a 100% security offset..
+		MaxAge = time.time() - (2 * ModuleControlMaxAge)
+
+		TimeFileLatestModified = self.ObjTouchFileV.stat().st_mtime
+		if TimeFileLatestModified > MaxAge:
+			bSuccess = True
+			#print ("PID File Age ok: " + str(time.time() - TimeFileLatestModified) + " seconds")
+		else:
+			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " Error on ControlFile it is too old: " + str(time.time() - TimeFileLatestModified) + " seconds")
+
+		return bSuccess
+
 	############################################################################################################
 	def __RunPeriodicJob__(self, Module):
 
@@ -142,7 +167,7 @@ class ClassRunModules(object):
 		"""
 		Timestamp = time.time()
 		# Starting a process
-		if (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and not self.NoStartupAllowedProcessIsInStrangeState and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess and Timestamp > self.Module.ProcessTimestampToBeRestarted:
+		if (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and not self.NoStartupAllowedProcessIsInStrangeState and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess and Timestamp > Module.ProcessTimestampToBeRestarted:
 			## first we check, if the process is already running
 			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
 
@@ -161,10 +186,29 @@ class ClassRunModules(object):
 				## The process or whatever has to be killed...
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 1 Run a process start procedure Binary: " + Module.ModuleParameter.ModuleBinary + " Failed.. process seems not to be running.. we kill it again")
 				self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
-				self.Module.ControlThread.DetermineNextStartupTime()
+				Module.DetermineNextStartupTime(self.ThreadName)
+				Module.NextDataExpected = 0
+
+		## 2021-01-24
+		## the select in the contol thread may hang, if a child process is in a weird kill 9 condition.. so we setup
+		## a Software Watchdog funtionality, which can be enabled by the main thread
+		elif (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and self.ForceSWWatchdogProcedure:
+
+			# First we call the Fail-Safe function
+			## this call is a bit strange... but works
+			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " SW Watchdog: Set stalled process into failsafe state")
+			Module.Thread.ObjFailSafeFunctions.SetIntoFailSafeState(False)
+
+			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " SW Watchdog: Run a process stop procedure")
+			self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
+
+			time.sleep (1.0)
+
+			## reset the SW watchdog switch
+			self.ForceSWWatchdogProcedure = False
 
 		# stopping a process
-		elif (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and self.StopProcess:
+		elif (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and self.StopProcess:
 			self.StartProcess = False
 			self.ReloadProcess = False
 
@@ -180,7 +224,7 @@ class ClassRunModules(object):
 			## Check on the success of the stopping procedure
 
 		# restarting a process
-		elif (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and not self.NoStartupAllowedProcessIsInStrangeState and self.ReloadProcess and self.StartProcess:
+		elif (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and not self.NoStartupAllowedProcessIsInStrangeState and self.ReloadProcess and self.StartProcess:
 			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 5 Run a process restart procedure " + Module.ModuleParameter.ModuleBinary)
 
 			self.__DoJobBeforeReStarting__()
@@ -199,10 +243,11 @@ class ClassRunModules(object):
 				## The process or whatever has to be killed...
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 5 Run a process restart Failed.. we kill process again " + Module.ModuleParameter.ModuleBinary)
 				self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
-				self.Module.ControlThread.DetermineNextStartupTime()
+				Module.DetermineNextStartupTime(self.ThreadName)
+				Module.NextDataExpected = 0
 
 		# Periodic Check by script, if there is one
-		elif (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and Module.ModuleParameter.ModulePeriodicCheckEnabled and (self.NextCheckToDo < time.time()):
+		elif (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and Module.ModuleParameter.ModulePeriodicCheckEnabled and (self.NextCheckToDo < time.time()):
 			print ("Thread: " + self.ThreadName + " 6 Want to run a process check procedure and get the status by a script.. if there is one")
 			self.ProcessCheckSucceeded = self.__CheckSingleProcess__(Module.ModuleParameter.ModuleCheckScript)
 			self.NextCheckToDo = time.time() + Module.ModuleParameter.ModulePeriodicCheckInterval
@@ -214,13 +259,49 @@ class ClassRunModules(object):
 			self.ProcessIsRunning = self.CheckStatusSingleProcessByScript(Module.ModuleParameter.ModuleStatusScript, Module.ModuleParameter.ModuleStatusScriptParameter)
 		## the Status Check by PID from PIDFile is done independently, if a regular Check is also done
 		# periodic check against the PID kill 0
-		if self.ProcessIsRunning and (not self.Module.ControlThread or (self.Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and Module.ModuleParameter.ModuleStatusByPIDFileEnable and (self.NextPIDStatusToDo < time.time()):
+		if self.ProcessIsRunning and (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and Module.ModuleParameter.ModuleStatusByPIDFileEnable and (self.NextPIDStatusToDo < time.time()):
 			#print ("Want to run ")
 			# In the End, after the CHecking Process was done, we check the status
 			self.ProcessIsRunning = self.CheckStatusSingleProcessByPIDFile(Module.ModuleParameter)
 			if not self.ProcessIsRunning:
-				self.Module.ControlThread.DetermineNextStartupTime()
+				Module.DetermineNextStartupTime(self.ThreadName)
+				Module.NextDataExpected = 0
+	
 			self.NextPIDStatusToDo = time.time() + Module.ModuleParameter.ModuleStatusByPIDFilePeriod
+
+		## 2021-01-31
+		## added timstamp check on the PID file
+		## We do this only in case that the regular control thread did not realize anything yet
+		## The same as the SW Watchdog
+		if Module.ModuleParameter.ModuleControlFileEnabled and self.ProcessIsRunning and (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown:
+			
+			#We do the checking of the control file 60 seconds after upstarting the process
+			if Timestamp > (Module.ProcessLastTimeStarted + 60.0): 
+				bAgeOfControlFileSufficient = self.VerifyCorrectAgeOfTouchFile(Module.ModuleParameter.ModuleControlMaxAge)
+				if not bAgeOfControlFileSufficient:
+					## something went wrong... 
+					## We kill the process if still running ...
+				
+					# First we call the Fail-Safe function.. in case ther are some
+					if Module.Thread and Module.Thread.ObjFailSafeFunctions:
+						self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " Age checking on PID file failed: Set stalled process into failsafe state")
+						Module.Thread.ObjFailSafeFunctions.SetIntoFailSafeState(False)
+
+					self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " Age checking on PID file failed: Run a process stop procedure")
+					self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
+
+					Module.NextDataExpected = 0
+				
+					## we determine the startup time in case that there is no control thread doing this
+					if not self.ProcessIsRunning and not Module.ModuleParameter.ModuleControlPortEnabled:
+						Module.DetermineNextStartupTime(self.ThreadName)
+
+					time.sleep (1.0)
+
+		## 2021-01-31
+		## normally this is done in the control thread... if there is one
+		if self.ProcessIsRunning and not Module.ModuleParameter.ModuleControlPortEnabled:
+			Module.CheckResetProcessCrashCounter()
 
 		return
 
@@ -298,7 +379,7 @@ class ClassRunModules(object):
 			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " Stopping Process: " + ModuleParameter.ModuleBinary)
 
 			if not os.path.exists(ModuleParameter.ModulePIDFile):
-				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + "StopSingleProcess: PID File not existant Process does not seem to run we look at the process list via ps command")
+				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " StopSingleProcess: PID File not existant Process does not seem to run we look at the process list via ps command")
 				ProcessIsRunning = self.__StopProcessByPS__(ModuleParameter, ProcessIsRunning)
 			else:
 
@@ -311,7 +392,7 @@ class ClassRunModules(object):
 					ProcessIsRunning = EvalProcessIsRunnig(ModuleParameter)
 
 				except:
-					self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + "StopSingleProcess: kill 15 on PID " + str(pid) + " did not succeed: Process seems not to be running we go for it via ps comamnd")
+					self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " StopSingleProcess: kill 15 on PID " + str(pid) + " did not succeed: Process seems not to be running we go for it via ps comamnd")
 					ProcessIsRunning = self.__StopProcessByPS__(ModuleParameter, ProcessIsRunning)
 					time.sleep (1.0)
 					pass
@@ -324,7 +405,7 @@ class ClassRunModules(object):
 			if not ProcessIsRunning:
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " StopSingleProcess: Process PID " + str(pid) + " has been successfyully killed with signal 15")
 			else:
-				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + "StopSingleProcess: Process PID " + str(pid) + " is still running we kill em finally with 9")
+				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " StopSingleProcess: Process PID " + str(pid) + " is still running we kill em finally with 9")
 		
 				try:
 					os.kill(pid, 9)
@@ -336,7 +417,7 @@ class ClassRunModules(object):
 						self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " StopSingleProcess: Process PID " + str(pid) + " has been successfyully killed with signal 9")
 
 				except:
-					self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + "StopSingleProcess: kill 9 on PID " + str(pid) + " did not succeed: Process seems not to be running, we make it sure by ps command")
+					self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " StopSingleProcess: kill 9 on PID " + str(pid) + " did not succeed: Process seems not to be running, we make it sure by ps command")
 					ProcessIsRunning = self.__StopProcessByPS__(ModuleParameter, ProcessIsRunning)
 					pass
 

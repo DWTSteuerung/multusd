@@ -30,13 +30,18 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 		self.Module = Module
 		self.multusdConfig = multusdConfig
 		self.multusdTools = multusdTools
+		
+		## Init Logging in Module Class
+		self.Module.InitLogging(self.ObjmultusdTools)
 
 		self.PrepareUpdateDirectory(self.multusdTools.multusdTMPDirectory, self.Module.ModuleParameter.ModuleIdentifier)
 
 		self.ObjmultusdTools.logger.debug("Started up multusdService.ClassmultusdThread Thread " + self.ThreadName + " Task ident: " + str(threading.current_thread().ident))
 		self.FatalError = False
+		self.ObjFailSafeFunctions = None
 
 		# in case it is a native multusd process it has a controlport an we can load a extra class with fail-safe functions
+
 		if self.Module.ModuleParameter.ModuleControlPortEnabled:
 			try:
 				## NOw we first have to build the name of the library for this module
@@ -51,6 +56,11 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 				self.FatalError = True
 				ErrorString = self.ObjmultusdTools.FormatException()
 				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " Fatal ERROR occured stting up the FailSafe Class: " + ErrorString)
+
+		## 2021-01-31
+		## Added PIDFile timstamp checking
+		if self.Module.ModuleParameter.ModuleControlFileEnabled:
+			self.InitVerifyAge(self.Module.ModuleParameter.ModulePIDFile)
 
 		return
 

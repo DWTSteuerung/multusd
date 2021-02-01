@@ -13,6 +13,7 @@ import pprint
 import inspect 
 import sys
 import os
+import time
 
 sys.path.append('/multus/lib')
 import multusdBasicConfigfileStuff
@@ -75,8 +76,73 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 			self.Thread = None # variable to keep the pointer on the thread instance lateron, the thread starting and stopping the process
 			self.ThreadErrorLoggingDone = False
 
+			self.ObjmultusdTools = None
+
 			# 2019-12-04
 			self.dBNKEnabled = False
+
+			# 2021-01-31
+			self.NextDataExpected = 0
+
+		## 2021-01-31
+		## moved this function here
+		##
+		def InitLogging(self, ObjmultusdTools):
+			self.ObjmultusdTools = ObjmultusdTools
+
+		def DetermineNextStartupTime(self, ThreadName):
+
+			self.ProcessTimestampLastCrashed = time.time()
+			TimeSiceLatestStart = self.ProcessTimestampLastCrashed - self.ProcessLastTimeStarted
+
+			## We should run at least 60 seconds.. otherwise we will delay the next start
+			if not self.ProcessCrashCounter:
+				# restart immediatly if crashed for the first time
+				self.ProcessTimestampToBeRestarted = time.time()
+				if self.ObjmultusdTools:
+					self.ObjmultusdTools.logger.debug("Error Thread: " + ThreadName + " first crash after " + str(TimeSiceLatestStart) + " seconds ... We restart immediatly")
+		
+			# we already crashed within the last 3 hours
+			elif  self.ProcessCrashCounter <= 3:
+				# restart after 10 second delay
+				self.ProcessTimestampToBeRestarted = time.time() + 10.0
+				if self.ObjmultusdTools:
+					self.ObjmultusdTools.logger.debug("Error Thread: " + ThreadName + " repeated crash after " + str(TimeSiceLatestStart) + " seconds... We restart with 10 second delay")
+				
+			elif self.ProcessCrashCounter > 3 and self.ProcessCrashCounter <= 6:
+				## We delay one minute
+				self.ProcessTimestampToBeRestarted = time.time() + 60.0
+				if self.ObjmultusdTools:
+					self.ObjmultusdTools.logger.debug("Error Thread: " + ThreadName + " repeated crash after " + str(TimeSiceLatestStart) + " seconds... We restart with 60 second delay")
+
+			elif self.ProcessCrashCounter > 6 and self.ProcessCrashCounter <= 10:
+				## We delay 10 minutes
+				self.ProcessTimestampToBeRestarted = time.time() + 600.0
+				if self.ObjmultusdTools:
+					self.ObjmultusdTools.logger.debug("Error Thread: " + ThreadName + " repeated crash after " + str(TimeSiceLatestStart) + " seconds... We restart with 600 second delay")
+
+			elif self.ProcessCrashCounter > 10:
+				## We delay 60 minutes
+				self.ProcessTimestampToBeRestarted = time.time() + 3600.0
+				if self.ObjmultusdTools:
+					self.ObjmultusdTools.logger.debug("Error Thread: " + ThreadName + " repeated crash after " + str(TimeSiceLatestStart) + " seconds... We restart with 3600 second delay")
+
+			self.ProcessCrashCounter += 1
+
+			return
+
+		# 2020-12-17
+		# 2021-01-31 .. moved it here
+		def CheckResetProcessCrashCounter(self, Timestamp = 0):
+			if self.ProcessCrashCounter:
+				if not Timestamp:
+					Timestamp = time.time()
+
+				TimeSiceLatestStart = Timestamp - self.ProcessLastTimeStarted
+				#after a 3 hour run, we reset error counter
+				if TimeSiceLatestStart > 10800.0:
+					self.ProcessCrashCounter = 0
+
 
 	def __init__(self, multusdConfig):
 		print ("starting ClassModuleConfig")
@@ -229,7 +295,6 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 					Instance = Instance + 1
 				# End while
 		return
-
 
 ####### test functionality
 if __name__ == "__main__":

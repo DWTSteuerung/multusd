@@ -64,6 +64,8 @@ class multusLANConfigClass(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff
 		self.SoftwareVersion = "1"
 	
 		self.ReloadNetworkDirectory = None
+
+		self.ModuleControlFileEnabled = False
 		return
 
 	def ReadConfig(self):
@@ -191,15 +193,28 @@ class multusLANOperateClass(object):
 
 	def Operate(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
 
-		## setup the periodic alive mnessage stuff
-		periodic = None
+		## setup the perodic alive mnessage stuff
+		ObjPerodic = None
 		if bPeriodicEnable:
-			print ("Setup the periodic Alive messages")
+			print ("Setup the perodic Alive messages")
 			TimestampNextmultusdPing = time.time()
-			periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
-			if not periodic.ConnectFeedbackSocket():
+			ObjPerodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
+			if not ObjPerodic.ConnectFeedbackSocket():
 				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
 				sys.exit(1)
+
+		#ObjPerodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
+		#TimestampNextmultusdPing = time.time() + 100000.0
+			
+		# 2021-01-31 
+		# do the touch thing to check alive status 
+		if self.ObjmultusLANConfig.ModuleControlFileEnabled:
+			if not ObjPerodic:
+				ObjPerodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', 888)
+
+																			## We do it twice as often as required, to ease the checking
+			ObjPerodic.InitCheckByThouch(self.ObjmultusLANConfig.LPIDFile, (self.ObjmultusLANConfig.ModuleControlMaxAge / 2.0))
+
 
 		# 2020-01-01
 		# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
@@ -210,16 +225,23 @@ class multusLANOperateClass(object):
 		DoSleep = True
 		WeDoItCounter = 30
 
+		NotToDoCounter = 0
 		while self.KeepThreadRunning:
 			Timestamp = time.time()
-			if periodic and Timestamp >= TimestampNextmultusdPing:
-				periodic.SendPeriodicMessage()
+			if bPeriodicEnable and ObjPerodic and Timestamp >= TimestampNextmultusdPing:
+				ObjPerodic.SendPeriodicMessage()
 				TimestampNextmultusdPing = time.time() + multusdPingInterval
 								
-				if periodic.WeAreOnError:
+				if ObjPerodic.WeAreOnError:
 					self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
 					self.KeepThreadRunning = False
-			
+				
+			# 2021-01-31
+			# Addition do the PID file touch stuff as well
+			if ObjPerodic and NotToDoCounter < 10:
+				ObjPerodic.DoCheckByTouch(Timestamp)
+				#NotToDoCounter += 1
+
 			## first we check on any changes
 			DoSleep, WeDoItCounter = self.CheckReloadNetwork(WeDoItCounter)
 
