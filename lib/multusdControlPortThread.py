@@ -142,7 +142,7 @@ class ClassControlPortThread(threading.Thread):
 
 			SelectTimeout = self.Module.ModuleParameter.ModuleControlMaxAge + self.StartupOffset
 			## no hanging in the accept, if the process is not running
-			if self.Module.Thread and self.Module.Thread.StartProcess and self.Module.Thread.ProcessIsRunning and not self.Module.Thread.StopProcess and not self.Module.Thread.ReloadProcess and not self.Module.Thread.NoStartupAllowedProcessIsInStrangeState and not self.Module.Thread.Shutdown and time.time() > self.Module.ProcessTimestampToBeRestarted:
+			if self.Module.Thread and self.Module.Thread.StartProcess and self.Module.Thread.ProcessIsRunning and not self.Module.Thread.StopProcess and not self.Module.Thread.ReloadProcess and not self.Module.Thread.Shutdown and time.time() > self.Module.ProcessTimestampToBeRestarted:
 				count = 0
 				## we need this initialisation otherwise it can come to an never ending loop 
 				TimestampLatestReceive = time.time() + SelectTimeout
