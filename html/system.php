@@ -155,7 +155,7 @@ echo "<table cellspacing='1' cellpadding='3' border=0 bgcolor='#000000'>";
 							echo $ObjSystemClass->GetRunningStatus($Module); 
 						echo "</td>";
 						echo "<td>";
-							if ($Module->ModuleControlPortEnabled)
+							if ($Module->ModuleControlPortEnabled or $Module->ModuleControlFileEnabled)
 							{
 								if ($Module->Enabled)
 									echo "<input type='text' size='5' name='ModuleControlMaxAge[$Key]' value='$Module->ModuleControlMaxAge'>";

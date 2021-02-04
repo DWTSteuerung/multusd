@@ -25,6 +25,7 @@ class StructModules
 	public $ModuleStatusScript = "";
 	public $ModuleStatusScriptParameter = "";
 	public $ModuleControlPortEnabled = "";
+	public $ModuleControlFileEnabled = "";
 	public $ModuleControlMaxAge = 0.0;
 	public $ModuleCheckScript = "";
 	public $ModulePeriodicCheckInterval = 0;
@@ -98,6 +99,7 @@ class ClassModules extends ClassIniFunctions
 			$Module->ModuleStatusScript = trim($Section['ModuleStatusScript']);
 			$Module->ModuleStatusScriptParameter = trim($Section['ModuleStatusScriptParameter']);
 			$Module->ModuleControlPortEnabled = trim($Section['ModuleControlPortEnabled']);
+			$Module->ModuleControlFileEnabled = trim($Section['ModuleControlFileEnabled']);
 			$Module->ModuleControlMaxAge = trim($Section['ModuleControlMaxAge']);
 			$Module->ModuleCheckScript = trim($Section['ModuleCheckScript']);
 			$Module->ModulePeriodicCheckInterval = $Section['ModulePeriodicCheckInterval'];
