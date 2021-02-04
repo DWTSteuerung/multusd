@@ -144,7 +144,9 @@ class multusdClientTemplateOperateClass(object):
 	############################################################
 	def SetupPeriodicmessages(self, bPeriodicmultusdSocketPingEnable):
 		bSuccess = False
-		SleepingTime = 1.0
+
+		MaxSleepingTime = 1.0
+		SleepingTime = MaxSleepingTime
 		
 		try:
 			## We do the peridic stuff 5 times per period, so we get it right when checking it
@@ -176,8 +178,8 @@ class multusdClientTemplateOperateClass(object):
 			# 2020-01-01
 			# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
 			SleepingTime = self.multusdPingInterval
-			if self.multusdPingInterval > 1.0:
-				SleepingTime = 1.0
+			if self.multusdPingInterval > MaxSleepingTime:
+				SleepingTime = MaxSleepingTime
 
 			bSuccess = True
 
