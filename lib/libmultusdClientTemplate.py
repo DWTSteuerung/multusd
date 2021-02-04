@@ -66,6 +66,7 @@ class multusdClientTemplateConfigClass(multusdBasicConfigfileStuff.ClassBasicCon
 		
 		self.ModuleControlPortEnabled = True
 		self.ModuleControlFileEnabled = False
+		self.ModuleControlPort = 43000
 
 		return
 
@@ -121,7 +122,9 @@ class multusdClientTemplateConfigClass(multusdBasicConfigfileStuff.ClassBasicCon
 		return bSuccess
 
 ############################################################################################################
-
+###
+### The main Class, weher all jobs are done
+### 
 class multusdClientTemplateOperateClass(object):
 	def __init__(self, ObjmultusdClientTemplateConfig, ObjmultusdTools):
 
@@ -129,27 +132,75 @@ class multusdClientTemplateOperateClass(object):
 		self.ObjmultusdTools = ObjmultusdTools
 
 		self.KeepThreadRunning = True
-		
+		self.multusdPingInterval = 5.0
+		self.ObjPeriodic = None
 		return
 
-############################################################
+	############################################################
 	def __del__(self):
 		print ("leaving multusdClientTemplateOperateClass")
 		pass
 
-############################################################
-	def DoPeriodicMessage(self, bPeriodicEnable):
+	############################################################
+	def SetupPeriodicmessages(self, bPeriodicmultusdSocketPingEnable):
+		bSuccess = False
+		SleepingTime = 1.0
+		
+		try:
+			## We do the peridic stuff 5 times per period, so we get it right when checking it
+			self.multusdPingInterval = self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge / 5.0
+
+			## setup the periodic alive mnessage stuff
+			if bPeriodicmultusdSocketPingEnable:
+				self.ObjmultusdTools.logger.debug("Setup the periodic Alive messages")
+				self.TimestampNextmultusdPing = time.time()
+				self.ObjPeriodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', self.ObjmultusdClientTemplateConfig.ModuleControlPort)
+				if not self.ObjPeriodic.ConnectFeedbackSocket():
+					self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
+					sys.exit(1)
+
+			# 2021-01-31 
+			# do the touch thing to check alive status even if no control socket is activated
+			if self.ObjmultusdClientTemplateConfig.ModuleControlFileEnabled:
+				## maybe we do the checking only by timstamp of PID file and not by control port
+				if not self.ObjPeriodic:
+																										# dummy parameters
+					self.ObjPeriodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', 888)
+				
+				## initialize the timspamp based stuff
+																				## We do it twice as often as required, to ease the checking
+				self.ObjPeriodic.InitCheckByThouch(self.ObjmultusdClientTemplateConfig.LPIDFile, (self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge / 5.0))
+				## We do the first check right here.. might be better after a shutdown by 9
+				self.ObjPeriodic.DoCheckByTouch(time.time())
+
+			# 2020-01-01
+			# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
+			SleepingTime = self.multusdPingInterval
+			if self.multusdPingInterval > 1.0:
+				SleepingTime = 1.0
+
+			bSuccess = True
+
+		except:
+			ErrorString = self.ObjmultusdTools.FormatException()	
+			self.ObjmultusdTools.logger.debug("SetupPeriodicmessages Fatal error setting up perodic stuff: " + ErrorString)
+
+		return SleepingTime, bSuccess 
+
+	############################################################
+	def DoPeriodicMessage(self, bPeriodicmultusdSocketPingEnable):
+		bSuccess = True
 		Timestamp = time.time()
 
 		## first we do the control port stuff and talk to the multud
-		if bPeriodicEnable and self.ObjPeriodic:
+		if bPeriodicmultusdSocketPingEnable and self.ObjPeriodic:
 			if Timestamp >= self.TimestampNextmultusdPing:
 				self.ObjPeriodic.SendPeriodicMessage()
 				self.TimestampNextmultusdPing = time.time() + self.multusdPingInterval
 				
 			if self.ObjPeriodic.WeAreOnError:
 				self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
-				self.KeepThreadRunning = False
+				bSuccess = false
 
 		# 2021-01-31
 		# Addition do the PID file touch stuff as well
@@ -157,49 +208,23 @@ class multusdClientTemplateOperateClass(object):
 		if self.ObjPeriodic:
 			self.ObjPeriodic.DoCheckByTouch(Timestamp)
 
-		return
+		return bSuccess 
 
-############################################################
-	def Operate(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
-		self.multusdPingInterval = multusdPingInterval
-		## setup the periodic alive mnessage stuff
-		self.ObjPeriodic = None
-		if bPeriodicEnable:
-			print ("Setup the periodic Alive messages")
-			self.TimestampNextmultusdPing = time.time()
-			self.ObjPeriodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
-			if not self.ObjPeriodic.ConnectFeedbackSocket():
-				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
-				sys.exit(1)
+	############################################################
+	###
+	### main funtion running the mein loop
+	###
+	def Operate(self, bPeriodicmultusdSocketPingEnable):
 
-		# 2021-01-31 
-		# do the touch thing to check alive status even if no control socket is activated
-		if self.ObjmultusdClientTemplateConfig.ModuleControlFileEnabled:
-			## maybe we do the checking only by timstamp of PID file and not by control port
-			if not self.ObjPeriodic:
-																									# dummy parameters
-				self.ObjPeriodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', 888)
-			
-			## initialize the timspamp based stuff
-																			## We do it twice as often as required, to ease the checking
-			self.ObjPeriodic.InitCheckByThouch(self.ObjmultusdClientTemplateConfig.LPIDFile, (self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge / 2.0))
-		# End Timstamp based process check
-		###########
-
-		# 2020-01-01
-		# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
-		SleepingTime = multusdPingInterval
-		if multusdPingInterval > 1.0:
-			SleepingTime = 1.0
-
-		## for test purpose only
-		NotToDoCounter = 0
+		## setup the periodic control stuff..
+		## if this does not succeed .. we do not have to continue
+		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
 		# here comes the endless loop
 		while self.KeepThreadRunning:
 			
 			## We do the periodic messages and stuff to indicate that we are alive for the multusd
-			self.DoPeriodicMessage(bPeriodicEnable)
+			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 			
 			## TODO
 			## place your code for individual actions here

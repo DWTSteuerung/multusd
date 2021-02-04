@@ -146,12 +146,18 @@ class ClassRunModules(object):
 		# We add a 100% security offset..
 		MaxAge = time.time() - (2 * ModuleControlMaxAge)
 
-		TimeFileLatestModified = self.ObjTouchFileV.stat().st_mtime
-		if TimeFileLatestModified > MaxAge:
-			bSuccess = True
-			#print ("PID File Age ok: " + str(time.time() - TimeFileLatestModified) + " seconds")
-		else:
-			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " Error on ControlFile it is too old: " + str(time.time() - TimeFileLatestModified) + " seconds")
+		try:
+			TimeFileLatestModified = self.ObjTouchFileV.stat().st_mtime
+			if TimeFileLatestModified > MaxAge:
+				bSuccess = True
+				#print ("PID File Age ok: " + str(time.time() - TimeFileLatestModified) + " seconds")
+			else:
+				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " Error on ControlFile it is too old: " + str(time.time() - TimeFileLatestModified) + " seconds")
+		except:
+			ErrorString = self.ObjmultusdTools.FormatException()	
+			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " VerifyCorrectAgeOfTouchFile Error" + ErrorString)
+			pass
+
 
 		return bSuccess
 
@@ -476,6 +482,7 @@ class ClassRunModules(object):
 		bRunningStatus = False
 		pid = None
 
+		#print ("We are going to check PID File: " + ModuleParameter.ModulePIDFile)
 		if not os.path.exists(ModuleParameter.ModulePIDFile):
 			print ("CheckStatusSingleProcessByPIDFile: PID File for Binary: " + ModuleParameter.ModuleBinary + " -- not existant we look in the process list")
 
@@ -489,6 +496,9 @@ class ClassRunModules(object):
 					bRunningStatus = True
 				except:
 					print ("CheckStatusSingleProcessByPIDFile: " + ModuleParameter.ModuleBinary + " -- kill 0 on PID from ps failed somehow.. it ran into an OS Error")
+					## 2021-02-04
+					## we make it sure
+					bRunningStatus = self.__StopProcessByPS__(ModuleParameter, bRunningStatus)
 					pass
 		else:
 			try:
@@ -499,6 +509,9 @@ class ClassRunModules(object):
 						bRunningStatus = True
 			except:
 				print ("CheckStatusSingleProcessByPIDFile: " + ModuleParameter.ModuleBinary + " -- PID File exists but Process Check with kill 0 failed.. process is not running")
+				## 2021-02-04
+				## we make it sure
+				bRunningStatus = self.__StopProcessByPS__(ModuleParameter, bRunningStatus)
 				pass
 
 		return bRunningStatus 
