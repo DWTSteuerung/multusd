@@ -41,16 +41,15 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 		self.ObjFailSafeFunctions = None
 
 		# in case it is a native multusd process it has a controlport an we can load a extra class with fail-safe functions
-
-		if self.Module.ModuleParameter.ModuleControlPortEnabled:
+		if self.Module.ModuleParameter.ModuleControlPortEnabled or self.Module.ModuleParameter.ModuleControlFileEnabled:
 			try:
 				## NOw we first have to build the name of the library for this module
 				## 2019-12-30 .. in case we run several instances of 1 process.. we only need 1 libary identified by the BasicIndentifier Name
 				Library = "lib" + self.Module.ModuleParameter.BasicIdentifier
 				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " We add the library for Module " + self.Module.ModuleParameter.BasicIdentifier + " named: " + Library)
 				DynamicComClass = importlib.import_module(Library)
-				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " We imported library 	successfully:  Integrity Process multusdBNK/OLIIntegrity enabled: " + str(self.Module.dBNKEnabled))
-				self.ObjFailSafeFunctions = DynamicComClass.FailSafeClass(self.multusdTools, self.Module.ModuleParameter.ModuleConfig, self.Module.ModuleParameter.ModuleIdentifier, self.Module.dBNKEnabled)
+				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " We imported library 	successfully:  Integrity Process multusdBNK/OLIIntegrity enabled: " + str(self.Module.DSVIntegrityEnabled))
+				self.ObjFailSafeFunctions = DynamicComClass.FailSafeClass(self.multusdTools, self.Module.ModuleParameter.ModuleConfig, self.Module.ModuleParameter.ModuleIdentifier, self.Module.DSVIntegrityEnabled)
 				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " Setup FailSafeClass successfully")
 			except:
 				self.FatalError = True
@@ -66,7 +65,7 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 
 	def __del__(self):
 		try:
-			if self.Module.ModuleParameter.ModuleControlPortEnabled and self.ObjFailSafeFunctions and "ExecuteOnmultusdDie" in dir(self.ObjFailSafeFunctions):
+			if self.ObjFailSafeFunctions and "ExecuteOnmultusdDie" in dir(self.ObjFailSafeFunctions):
 				self.ObjFailSafeFunctions.ExecuteOnmultusdDie()
 		except:
 			pass
@@ -74,26 +73,26 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 
 	############################################################################################################
 	def __DoJobBeforeStarting__(self):
-		if self.Module.ModuleParameter.ModuleControlPortEnabled:
+		if self.ObjFailSafeFunctions:
 			self.ObjFailSafeFunctions.SetIntoFailSafeState(self.ProcessIsRunning)
 		return
 	
 	############################################################################################################
 	def __DoJobBeforeReStarting__(self):
-		if self.Module.ModuleParameter.ModuleControlPortEnabled:
+		if self.ObjFailSafeFunctions:
 			self.ObjFailSafeFunctions.SetIntoFailSafeState(self.ProcessIsRunning)
 		return
 
 	############################################################################################################
 	def __DoJobAfterStopping__(self):
-		if self.Module.ModuleParameter.ModuleControlPortEnabled:
+		if self.ObjFailSafeFunctions:
 			self.ObjFailSafeFunctions.SetIntoFailSafeState(self.ProcessIsRunning)
 			self.ObjFailSafeFunctions.ExecuteAfterStop(self.ProcessIsRunning)
 		return
 
 	############################################################################################################
 	def __DoJobAfterStarting__(self):
-		if self.Module.ModuleParameter.ModuleControlPortEnabled:
+		if self.ObjFailSafeFunctions:
 			self.ObjFailSafeFunctions.ExecuteAfterStart(self.ProcessIsRunning)
 		return
 
@@ -122,7 +121,7 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 			if (not self.Module.ControlThread or (self.Module.ControlThread and not self.Module.ControlThread.bTimeout)):
 				self.__RunPeriodicJob__(self.Module)
 
-				if self.Module.ModuleParameter.ModuleControlPortEnabled:
+				if self.ObjFailSafeFunctions:
 					self.ObjFailSafeFunctions.ExecutePeriodic(self.ProcessIsRunning)
 	
 			## Check on Reload file in UPdate Directory

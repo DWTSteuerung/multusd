@@ -45,7 +45,7 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 				self.ModuleControlPort = 0
 				self.ModuleControlPortEnabled = False
 				self.ModuleControlFileEnabled = False
-				self.ModuleControlMaxAge = 0.0
+				self.ModuleControlMaxAge = 10.0
 				self.MaxTimeWaitForShutdown = 2.0
 
 				self.ModuleServiceUser = "admin"
@@ -53,8 +53,8 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 				self.ModuleStartScriptParameter = ""
 				self.ModuleStopScript = ""
 				self.ModuleStopScriptParameter = ""
-				self.ModuleStatusByPIDFileEnable = False
-				self.ModuleStatusByPIDFilePeriod = 5
+				self.ModuleStatusByPIDFileEnable = True
+				self.ModuleStatusByPIDFilePeriod = 5.0
 				self.ModuleStatusScript = ""
 				self.ModuleStatusScriptParameter = ""
 				self.ModuleCheckScript = ""
@@ -278,8 +278,17 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 					self.AllModules[-1].ModuleParameter.ModuleStopScript = self.__assignNone__(ModuleConfig[Element]['ModuleStopScript'])
 					self.AllModules[-1].ModuleParameter.ModuleStopScriptParameter = self.__assignNone__(ModuleConfig[Element]['ModuleStopScriptParameter'])
 					self.AllModules[-1].ModuleParameter.ModuleCheckScript = self.__assignNone__(ModuleConfig[Element]['ModuleCheckScript'])
-					self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFileEnable = self.__assignBool__(ModuleConfig[Element]['ModuleStatusByPIDFileEnable'])
-					self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFilePeriod = self.__assignInt__(ModuleConfig[Element]['ModuleStatusByPIDFilePeriod'])
+					## 2021-02-04
+					## in case that there is a real binary.. we need to have the PID File check enabled otherwise we lokk for the configured value
+					if not self.AllModules[-1].ModuleParameter.ModuleBinary:
+						self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFileEnable = self.__assignBool__(ModuleConfig[Element]['ModuleStatusByPIDFileEnable'])
+					
+					PIDFileperiod = self.__assignInt__(ModuleConfig[Element]['ModuleStatusByPIDFilePeriod'])
+
+					## the check period cannot be smallet than 5.0
+					if self.__assignInt__(ModuleConfig[Element]['ModuleStatusByPIDFilePeriod']) > 5.0:
+						self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFilePeriod = self.__assignInt__(ModuleConfig[Element]['ModuleStatusByPIDFilePeriod'])
+
 					self.AllModules[-1].ModuleParameter.ModuleStatusScript = self.__assignNone__(ModuleConfig[Element]['ModuleStatusScript'])
 					self.AllModules[-1].ModuleParameter.ModuleStatusScriptParameter = self.__assignNone__(ModuleConfig[Element]['ModuleStatusScriptParameter'])
 					self.AllModules[-1].ModuleParameter.ModulePeriodicCheckInterval = self.__assignInt__(ModuleConfig[Element]['ModulePeriodicCheckInterval'])
