@@ -48,8 +48,9 @@ import multusdControlSocketClient
 if libmultusStatusLED.UseJsonConfig:
 	import libmultusdJson
 	import libmultusdJsonModuleConfig
+import libmultusdClientBasisStuff
 
-class StatusLEDClass(object):
+class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 
 	def __init__(self):
 
@@ -76,26 +77,25 @@ class StatusLEDClass(object):
 			ObjmultusdModulesConfig = multusdModuleConfig.ClassModuleConfig(ObjmultusdConfig)
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
-		self.ModuleControlPort = 43000
-		self.ModuleControlPortEnabled = True
-
 		#WalkThe list of modules to find our configuration files.. 
-		Ident = "multusStatusLED"
+		Ident = "StatusLED"
 		for Module in ObjmultusdModulesConfig.AllModules:
 			if Module.ModuleParameter.ModuleIdentifier == Ident:
 				if libmultusStatusLED.UseJsonConfig:
-					self.ObjmultusStatusLEDConfig = libmultusStatusLED.StatusLEDConfigClass(None)
-					bSuccess = self.ObjmultusStatusLEDConfig.ReadJsonConfig(self.ObjmultusdTools, self.ObjmultusdConfig, Ident)
+					self.ObjStatusLEDConfig = libmultusStatusLED.StatusLEDConfigClass(None)
+					bSuccess = self.ObjStatusLEDConfig.ReadJsonConfig(self.ObjmultusdTools, self.ObjmultusdConfig, Ident)
 					if not bSuccess:
 						print ("Error getting Json config, we exit")
 						sys.exit(2)
 				else:
 					self.ObjmultusStatusLEDConfig = libmultusStatusLED.StatusLEDConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusStatusLEDConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjmultusStatusLEDConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
-				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				self.ObjmultusStatusLEDConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjmultusStatusLEDConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				# 2021-02-07
+				self.ObjmultusStatusLEDConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled
 				break
 
 		self.LogFile = ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -112,9 +112,9 @@ class StatusLEDClass(object):
 		## Do the PIDFIle
 		try:
 			self.StatusLEDIsRunningTwice = False
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjmultusStatusLEDConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjmultusStatusLEDConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjmultusStatusLEDConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -122,20 +122,20 @@ class StatusLEDClass(object):
 			sys.exit(1)
 
 		## get the hardware access
-		self.ObjmultusStatusLEDFunctions = libmultusStatusLED.StatusLEDFunctionsClass(self.ObjmultusStatusLEDConfig, self.ObjmultusdTools)
+		self.ObjStatusLEDFunctions = libmultusStatusLED.StatusLEDFunctionsClass(self.ObjmultusStatusLEDConfig, self.ObjmultusdTools)
 		self.ObjLANWANStatus = NetworkStatus.gRPCLANWANStatusClass(self.ObjmultusdTools)
 		self.ObjOVPNStatus = NetworkStatus.gRPCOVPNStatusClass(self.ObjmultusdTools)
 
-		self.KeepItRunning = True
-
+		# init parent class
+		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, self.ObjmultusStatusLEDConfig, self.ObjmultusdTools)
 		return
 
 	def __del__(self):
-		self.ObjmultusStatusLEDFunctions.LEDOff()
+		self.ObjStatusLEDFunctions.LEDOff()
 
 		try:
 			if not self.StatusLEDIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjmultusStatusLEDConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools .FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -150,22 +150,23 @@ class StatusLEDClass(object):
 		print (timestr + 'Signal handler called with signal ' + str(signum))
 		
 		if signum == 15 or signum == 2:
-			self.KeepItRunning = False
+			self.KeepThreadRunning = False
 
 		sys.exit(0)
 
 		return
 
-
+	############################################################
+	###
+	### main funtion running the main loop
+	###
 	def haupt (self, bDaemon):
 
 		## setup the periodic alive mnessage stuff
-		if self.ModuleControlPortEnabled and bDaemon:
-			self.ObjmultusdTools.logger.debug("Setup the periodic Alive messages")
-			self.periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', self.ModuleControlPort)
-			self.periodic.ConnectFeedbackSocket()
-		else:
-			self.ObjmultusdTools.logger.debug("Alive Message to multusd FeedBack port are not enabled")
+		bPeriodicmultusdSocketPingEnable = self.ObjmultusStatusLEDConfig.ModuleControlPortEnabled and bDaemon
+		## setup the periodic control stuff..
+		## if this does not succeed .. we do not have to continue
+		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
 		LEDStatus = False
 		ConnectionStatus = 0
@@ -174,32 +175,34 @@ class StatusLEDClass(object):
 		iErrors = -1
 		vErrors = -1
 		 
-		while (self.KeepItRunning):
+		while (self.KeepThreadRunning):
 			
-			#self.ObjmultusdTools.logger.debug("Run in Loop")
-			
-			## DO the peridoc call against the multusd
-			if self.ModuleControlPortEnabled and bDaemon:
-				self.periodic.SendPeriodicMessage()
+			## We do the periodic messages and stuff to indicate that we are alive for the multusd
+			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 
 			#read Errors Internet connection
 			if self.ObjmultusStatusLEDConfig.LEDInternetEnable:
-				LocalLANWANStatus, ConnectionStatus = self.ObjLANWANStatus.GetWANStatus("StatusLED WAN Status Request")
+				LocalLANWANStatus, bConnectionStatus = self.ObjLANWANStatus.GetWANStatus("StatusLED WAN Status Request")
 				if not LocalLANWANStatus.ValidStatus:
 					iErrors = -1
 				elif not LocalLANWANStatus.ConnectionStatus:
 					iErrors = 1
 				elif LocalLANWANStatus.ConnectionStatus:
 					iErrors = 0
+			else:
+				iErrors = 0
+				
 
 			if self.ObjmultusStatusLEDConfig.LEDVPNEnable:
-				LocalOVPNStatus, ConnectionStatus = self.ObjOVPNStatus.GetOVPNStatus("StatusLED OVPN Status Request")
+				LocalOVPNStatus, bConnectionStatus = self.ObjOVPNStatus.GetOVPNStatus("StatusLED OVPN Status Request")
 				if not LocalOVPNStatus.ValidStatus:
 					vErrors = -1
 				elif not LocalOVPNStatus.ConnectionStatus:
 					vErrors = 1
 				elif LocalOVPNStatus.ConnectionStatus:
 					vErrors = 0
+			else:
+				vErrors = 0
 
 			print ("InternetErrors: " + str(iErrors))
 			print ("OpenVPNErrors:  " + str(vErrors))
@@ -215,30 +218,30 @@ class StatusLEDClass(object):
 
 			if ConnectionStatus == 0:
 				Counter = 0
-				LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOff()
+				LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
 
 			elif ConnectionStatus == 1:
 				if LEDStatus:
 					Counter = 0
-					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOff()
+					LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
 				else:
 					Counter = 0
-					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOn()
+					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
 
 			elif ConnectionStatus == 2:
 
 				if LEDStatus and Counter >= 3:
 					Counter = 0
-					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOff()
+					LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
 				elif not LEDStatus and Counter >= 3:
 					Counter = 0
-					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOn()
+					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
 
 			elif ConnectionStatus == 3:
 				Counter = 0
 				if not LEDStatus or RefreshCounter >= 120:
 					RefreshCounter = 0	
-					LEDStatus = self.ObjmultusStatusLEDFunctions.LEDOn()
+					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
 
 		
 			## Damit ab und zu das LED-Signal aktualisiert wird
@@ -250,8 +253,8 @@ class StatusLEDClass(object):
 
 def DoTheDeamonJob(bDaemon = True):
 
-	ObjmultusStatusLED = StatusLEDClass()  
-	ObjmultusStatusLED.haupt(bDaemon)
+	ObjStatusLED = StatusLEDClass()  
+	ObjStatusLED.haupt(bDaemon)
 
 	return
 

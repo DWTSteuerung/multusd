@@ -12,7 +12,7 @@ import configparser
 
 sys.path.append('/multus/lib')
 ## do the Periodic Alive Stuff
-import multusdControlSocketClient
+import libmultusdClientBasisStuff
 import multusdBasicConfigfileStuff
 
 import libOVPNTools
@@ -37,7 +37,7 @@ import urllib.request
 # to have a class like this
 #
 class FailSafeClass(object):
-	def __init__(self, Tools, ModuleConfig, Ident, dBNKEnabled):
+	def __init__(self, Tools, ModuleConfig, Ident, DSVIntegrityEnabled):
 		
 		self.Ident = Ident
 		
@@ -66,7 +66,13 @@ class multusOVPNClientConfigClass(multusdBasicConfigfileStuff.ClassBasicConfigfi
 		multusdBasicConfigfileStuff.ClassBasicConfigfileStuff.__init__(self)
 
 		self.ConfigFile = ConfigFile
-		self.SoftwareVersion = "10"
+
+		# 2021-02-07
+		self.SoftwareVersion = "1"
+		
+		self.ModuleControlPortEnabled = True
+		self.ModuleControlFileEnabled = False
+		self.ModuleControlPort = 43000
 	
 		return
 
@@ -200,13 +206,12 @@ class gRPCmultusOVPNClientServicer(multusOVPNClient_pb2_grpc.gRPCmultusOVPNClien
 
 ############################################################################################################
 # Class called by the main programm
-class multusOVPNClientOperateClass(object):
+class multusOVPNClientOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 	def __init__(self, ObjmultusOVPNClientConfig, ObjmultusdTools):
+		# init parent class
+		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, ObjmultusOVPNClientConfig, ObjmultusdTools)
 
 		self.ObjmultusOVPNClientConfig = ObjmultusOVPNClientConfig
-		self.ObjmultusdTools = ObjmultusdTools
-
-		self.KeepThreadRunning = True
 
 		self.ObjmultusOVPNClientHandling = multusOVPNClientHandlingClass(ObjmultusOVPNClientConfig, ObjmultusdTools)
 		
@@ -216,22 +221,19 @@ class multusOVPNClientOperateClass(object):
 		print ("leaving multusOVPNClientOperateClass")
 		pass
 
-	def RungRPCServer(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
-		## setup the periodic alive mnessage stuff
-		periodic = None
-		if bPeriodicEnable:
-			print ("Setup the periodic Alive messages")
-			TimestampNextmultusdPing = time.time()
-			periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
-			if not periodic.ConnectFeedbackSocket():
-				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
-				sys.exit(1)
+	############################################################
+	###
+	### main funtion running the main loop
+	###
+	#def RungRPCServer(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
+	def RungRPCServer(self, bPeriodicmultusdSocketPingEnable):
+		## setup the periodic control stuff..
+		## if this does not succeed .. we do not have to continue
+		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
-		TimestampNextmultusdPing = time.time()
-		
 		# declare a server object with desired number
 		# of thread pool workers.
-		self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+		self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
  
 		# This line can be ignored
 		multusOVPNClient_pb2_grpc.add_gRPCmultusOVPNClientServicer_to_server(gRPCmultusOVPNClientServicer(self.ObjmultusdTools, self.ObjmultusOVPNClientHandling), self.gRPCServer)
@@ -246,30 +248,11 @@ class multusOVPNClientOperateClass(object):
 		# Now we set up the OpenVPn connection
 		self.ObjmultusOVPNClientHandling.StartOVPN()
 
-		# 2020-01-01
-		# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
-		SleepingTime = multusdPingInterval
-		if multusdPingInterval > 1.0:
-			SleepingTime = 1.0
-
-		
-		# do it initially to prevent startup killing
-		if periodic:
-			periodic.SendPeriodicMessage()
-	
 		while self.KeepThreadRunning and self.ObjmultusOVPNClientHandling.gRPCKeepThreadRunning:
-			#self.ObjmultusdTools.logger.debug('gRPCService while loop, SleepingTime: ' + str(SleepingTime))
+			## We do the periodic messages and stuff to indicate that we are alive for the multusd
+			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 
 			self.ObjmultusOVPNClientHandling.CheckOVPN()
-
-			Timestamp = time.time()
-			if periodic and Timestamp >= TimestampNextmultusdPing:
-				periodic.SendPeriodicMessage()
-				TimestampNextmultusdPing = time.time() + multusdPingInterval
-								
-				if periodic.WeAreOnError:
-					self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
-					self.KeepThreadRunning = False
 	
 			if self.KeepThreadRunning:
 				time.sleep (SleepingTime)

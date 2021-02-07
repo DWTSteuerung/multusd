@@ -50,6 +50,71 @@ if (isset($_POST['apply']))
 				
 				$bIniNeedsToBeWritten = True;
 			}
+			
+			// 2021-02-07
+			// more parameters to configure by http
+			if (($Module->ModuleStatusByPIDFileEnable) && ! isset($_POST['ModuleStatusByPIDFileEnable'][$Key])) 
+			{	
+				// changed from True to False
+				//echo "<H2> Enabel $Key changed from True to False</H2>";
+
+				$ObjModules->ini[$Module->ModuleKey]['ModuleStatusByPIDFileEnable'] = False;
+				$ObjModules->ArrayAllModules[$Key]->ModuleStatusByPIDFileEnable = False;
+				
+				$bIniNeedsToBeWritten = True;
+
+			}
+			else if((! $Module->ModuleStatusByPIDFileEnable) && isset($_POST['ModuleStatusByPIDFileEnable'][$Key]))
+			{
+				//echo "<H2> Enabel $Key changed from False to True</H2>";
+				$ObjModules->ini[$Module->ModuleKey]['ModuleStatusByPIDFileEnable'] = True;
+				$ObjModules->ArrayAllModules[$Key]->ModuleStatusByPIDFileEnable = True;
+				
+				$bIniNeedsToBeWritten = True;
+			}
+
+			if (($Module->ModuleControlPortEnabled) && ! isset($_POST['ModuleControlPortEnabled'][$Key])) 
+			{	
+				// changed from True to False
+				//echo "<H2> Enabel $Key changed from True to False</H2>";
+
+				$ObjModules->ini[$Module->ModuleKey]['ModuleControlPortEnabled'] = False;
+				$ObjModules->ArrayAllModules[$Key]->ModuleControlPortEnabled = False;
+				
+				$bIniNeedsToBeWritten = True;
+
+			}
+			else if((! $Module->ModuleControlPortEnabled) && isset($_POST['ModuleControlPortEnabled'][$Key]))
+			{
+				//echo "<H2> Enabel $Key changed from False to True</H2>";
+				$ObjModules->ini[$Module->ModuleKey]['ModuleControlPortEnabled'] = True;
+				$ObjModules->ArrayAllModules[$Key]->ModuleControlPortEnabled = True;
+				
+				$bIniNeedsToBeWritten = True;
+			}
+
+			if (($Module->ModuleControlFileEnabled) && ! isset($_POST['ModuleControlFileEnabled'][$Key])) 
+			{	
+				// changed from True to False
+				//echo "<H2> Enabel $Key changed from True to False</H2>";
+
+				$ObjModules->ini[$Module->ModuleKey]['ModuleControlFileEnabled'] = False;
+				$ObjModules->ArrayAllModules[$Key]->ModuleControlFileEnabled = False;
+				
+				$bIniNeedsToBeWritten = True;
+
+			}
+			else if((! $Module->ModuleControlFileEnabled) && isset($_POST['ModuleControlFileEnabled'][$Key]))
+			{
+				//echo "<H2> Enabel $Key changed from False to True</H2>";
+				$ObjModules->ini[$Module->ModuleKey]['ModuleControlFileEnabled'] = True;
+				$ObjModules->ArrayAllModules[$Key]->ModuleControlFileEnabled = True;
+				
+				$bIniNeedsToBeWritten = True;
+			}
+
+
+
 			// 2019-12-30
 			// Check on number of instances
 			if (($Module->RunOnce == False) && isset($_POST['RunInstances'][$Key])) 
@@ -80,6 +145,34 @@ if (isset($_POST['apply']))
 					$bIniNeedsToBeWritten = True;
 				}
 			}
+			// 2021-02-07
+			// Check the kill 0 interval
+			if (($Module->Enabled) && isset($_POST['ModuleStatusByPIDFilePeriod'][$Key])) 
+			{
+				$ModuleStatusByPIDFilePeriod = trim($_POST['ModuleStatusByPIDFilePeriod'][$Key]);
+				if (($Module->ModuleStatusByPIDFilePeriod) != $ModuleStatusByPIDFilePeriod)
+				{
+					print ("<p>Old kill 0 Timout: $Module->ModuleStatusByPIDFilePeriod<br>New kill 0 Timout: $ModuleStatusByPIDFilePeriod<p>");
+
+					$ObjModules->ini[$Module->ModuleKey]['ModuleStatusByPIDFilePeriod'] = $ModuleStatusByPIDFilePeriod;
+					$ObjModules->ArrayAllModules[$Key]->ModuleStatusByPIDFilePeriod = $ModuleStatusByPIDFilePeriod;
+					$bIniNeedsToBeWritten = True;
+				}
+			}
+
+			if (($Module->Enabled) && isset($_POST['ModuleControlPort'][$Key])) 
+			{
+				$ModuleControlPort = trim($_POST['ModuleControlPort'][$Key]);
+				if (($Module->ModuleControlPort) != $ModuleControlPort)
+				{
+					print ("<p>Old TCP Port: $Module->ModuleControlPort<br>New TCP Port: $ModuleControlPort<p>");
+
+					$ObjModules->ini[$Module->ModuleKey]['ModuleControlPort'] = $ModuleControlPort;
+					$ObjModules->ArrayAllModules[$Key]->ModuleControlPort= $ModuleControlPort;
+					$bIniNeedsToBeWritten = True;
+				}
+			}
+
 		}
 	}
 
@@ -102,8 +195,6 @@ if (isset($_POST['apply']))
 
 /////// 2019-10-31
 /////// Now here comes the html stuff and the selction
-
-
 echo "<table cellspacing='1' cellpadding='3' border=0 bgcolor='#000000'>";
 	echo "<tr align=center bgcolor='#FFFFFF'>";
 		echo "<th>multus System Services</th>";
@@ -111,20 +202,36 @@ echo "<table cellspacing='1' cellpadding='3' border=0 bgcolor='#000000'>";
 	echo "<tr align=center bgcolor='#FFFFFF'><td>";
 		echo "<table cellspacing='1' cellpadding='10' border=0 bgcolor='#000000'></td>";
 			echo "<tr align=center bgcolor='#FFFFFF'>";
-				echo "<th width='450'>";
+				echo "<th width='300'>";
 					echo "Service";
 				echo "</th>";
-				echo "<th width='150'>";
-					echo "Enabled";
+				echo "<th width='80'>";
+					echo "Process Enabled";
 				echo "</th>";
-				echo "<th width='150'>";
+				echo "<th width='80'>";
+					echo "Kill 0 PID<br><br>Do not disable";
+				echo "</th>";
+				echo "<th width='80'>";
+					echo "Kill 0<br>Interval / s";
+				echo "</th>";
+
+				echo "<th width='80'>";
+					echo "Control-Port<br><br>Exact Timing";
+				echo "</th>";
+				echo "<th width='80'>";
+					echo "Control<br>TCP-Port";
+				echo "</th>";
+				echo "<th width='80'>";
+					echo "Control-File<br><br>less load<br>+ 1s";
+				echo "</th>";
+				echo "<th width='80'>";
 					echo "Instances";
 				echo "</th>";
-				echo "<th width='150'>";
+				echo "<th width='80'>";
 					echo "Status";
 				echo "</th>";
-				echo "<th width='150'>";
-					echo "Control Port<br>Watchdog<br>Latency / s";
+				echo "<th width='80'>";
+					echo "Control Port/File<br>Watchdog<br>Latency / s";
 				echo "</th>";
 			echo "</tr>";
 
@@ -145,22 +252,88 @@ echo "<table cellspacing='1' cellpadding='3' border=0 bgcolor='#000000'>";
 
 						echo "</td>";
 						echo "<td>";
-							if ($Module->RunOnce)
-								echo "<input type='text' size='5' name='RunInstances[$Key]' value='1' disabled>";
-							else
-								echo "<input type='text' size='5' name='RunInstances[$Key]' value='$Module->RunInstances'>";
+							if ($Module->ModuleBinaryStartupDirectlyEnable)
+								if ($Module->Enabled)
+									if ($Module->ModuleStatusByPIDFileEnable )
+										echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True' checked = 'checked'> Enabled </label>";
+									else
+										echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True'> Enabled </label>";
+								else
+									if ($Module->ModuleStatusByPIDFileEnable )
+										echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True' checked = 'checked' disabled> Enabled </label>";
+									else
+										echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True' disabled> Enabled </label>";
+
+						echo "</td>";
+
+						echo "<td>";
+							if ($Module->ModuleBinaryStartupDirectlyEnable && $Module->ModuleStatusByPIDFileEnable)
+							{
+								if ($Module->Enabled)
+									echo "<input type='text' size='1' name='ModuleStatusByPIDFilePeriod[$Key]' value='$Module->ModuleStatusByPIDFilePeriod'>";
+								else
+									echo "<input type='text' size='1' name='ModuleStatusByPIDFilePeriod[$Key]' value='$Module->ModuleStatusByPIDFilePeriod' disabled>";
+							}
 
 						echo "</td>";
 						echo "<td>";
-							echo $ObjSystemClass->GetRunningStatus($Module); 
+							if ($Module->ModuleBinaryStartupDirectlyEnable)
+								if ($Module->Enabled)
+									if ($Module->ModuleControlPortEnabled)
+										echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True' checked = 'checked'> Enabled </label>";
+									else
+										echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True'> Enabled </label>";
+								else
+									if ($Module->ModuleControlPortEnabled)
+										echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True' checked = 'checked' disabled> Enabled </label>";
+									else
+										echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True' disabled> Enabled </label>";
+									
 						echo "</td>";
 						echo "<td>";
-							if ($Module->ModuleControlPortEnabled or $Module->ModuleControlFileEnabled)
+							if ($Module->ModuleBinaryStartupDirectlyEnable)
+								if ($Module->ModuleControlPortEnabled && $Module->Enabled)
+									echo "<input type='text' size='1' name='ModuleControlPort[$Key]' value='$Module->ModuleControlPort '>";
+								else
+									echo "<input type='text' size='1' name='ModuleControlPort[$Key]' value='$Module->ModuleControlPort ' disabled>";
+
+						echo "</td>";
+						echo "<td>";
+							if ($Module->ModuleBinaryStartupDirectlyEnable)
+								if ($Module->Enabled)
+									if ($Module->ModuleControlFileEnabled) 
+										echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True' checked = 'checked'> Enabled </label>";
+									else
+										echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True'> Enabled </label>";
+								else
+									if ($Module->ModuleControlFileEnabled)
+										echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True' checked = 'checked' disabled> Enabled </label>";
+									else
+										echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True' disabled> Enabled </label>";
+
+							echo "</td>";
+
+						echo "<td>";
+							if ($Module->RunOnce || !$Module->Enabled)
+								echo "<input type='text' size='1' name='RunInstances[$Key]' value='$Module->RunInstances' disabled>";
+							else
+								echo "<input type='text' size='1' name='RunInstances[$Key]' value='$Module->RunInstances'>";
+
+						echo "</td>";
+
+						echo "<td>";
+							if ($Module->Enabled)
+								echo $ObjSystemClass->GetRunningStatus($Module); 
+							else
+								echo (" -- "); 
+						echo "</td>";
+						echo "<td>";
+							if ($Module->ModuleBinaryStartupDirectlyEnable && ($Module->ModuleControlPortEnabled || $Module->ModuleControlFileEnabled))
 							{
 								if ($Module->Enabled)
-									echo "<input type='text' size='5' name='ModuleControlMaxAge[$Key]' value='$Module->ModuleControlMaxAge'>";
+									echo "<input type='text' size='1' name='ModuleControlMaxAge[$Key]' value='$Module->ModuleControlMaxAge'>";
 								else
-									echo "<input type='text' size='5' name='ModuleControlMaxAge[$Key]' value='$Module->ModuleControlMaxAge' disabled>";
+									echo "<input type='text' size='1' name='ModuleControlMaxAge[$Key]' value='$Module->ModuleControlMaxAge' disabled>";
 							}
 
 						echo "</td>";

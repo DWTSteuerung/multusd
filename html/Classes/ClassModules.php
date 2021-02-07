@@ -17,6 +17,7 @@ class StructModules
 	public $ModulePosition = 100;
 	public $PHPPage = "";
 	public $ModuleIsAService = False;
+	public $ModuleBinaryStartupDirectlyEnable = False;
 	public $ModuleBinary = "";
 	public $ModuleStartScript = "";
 	public $ModuleStartScriptParameter = "";
@@ -29,6 +30,9 @@ class StructModules
 	public $ModuleControlMaxAge = 0.0;
 	public $ModuleCheckScript = "";
 	public $ModulePeriodicCheckInterval = 0;
+	public $ModuleStatusByPIDFileEnable = True;
+	public $ModuleStatusByPIDFilePeriod= 5.0;
+	public $ModuleControlPort = 123;
 }
 
 if (isset($_SERVER['DOCUMENT_ROOT']) && $_SERVER['DOCUMENT_ROOT'])
@@ -91,6 +95,8 @@ class ClassModules extends ClassIniFunctions
 			$Module->PHPPage = trim($Section['PHPPage']);
 
 			$Module->ModuleIsAService = trim($Section['ModuleIsAService']);
+
+			$Module->ModuleBinaryStartupDirectlyEnable  = trim($Section['ModuleBinaryStartupDirectlyEnable']);
 			$Module->ModuleBinary = trim($Section['ModuleBinary']);
 			$Module->ModuleStartScript = trim($Section['ModuleStartScript']);
 			$Module->ModuleStartScriptParameter = trim($Section['ModuleStartScriptParameter']);
@@ -102,7 +108,10 @@ class ClassModules extends ClassIniFunctions
 			$Module->ModuleControlFileEnabled = trim($Section['ModuleControlFileEnabled']);
 			$Module->ModuleControlMaxAge = trim($Section['ModuleControlMaxAge']);
 			$Module->ModuleCheckScript = trim($Section['ModuleCheckScript']);
-			$Module->ModulePeriodicCheckInterval = $Section['ModulePeriodicCheckInterval'];
+			$Module->ModulePeriodicCheckInterval = trim($Section['ModulePeriodicCheckInterval']);
+			$Module->ModuleStatusByPIDFileEnable = trim($Section['ModuleStatusByPIDFileEnable']);
+			$Module->ModuleStatusByPIDFilePeriod = trim($Section['ModuleStatusByPIDFilePeriod']);
+			$Module->ModuleControlPort = trim($Section['ModuleControlPort']);
 			
 			$this->ArrayAllModules[] = $Module;
 

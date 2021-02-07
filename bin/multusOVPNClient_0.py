@@ -33,7 +33,6 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # 2020-06-01
 # Json config option
-
 if libmultusOVPNClient.UseJsonConfig:
 	import libmultusdJson
 	import libmultusdJsonModuleConfig
@@ -79,8 +78,6 @@ class multusOVPNClientClass(object):
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
 		self.ProcessIsRunningTwice = True
-		self.ModuleControlPort = 43000
-		self.ModuleControlPortEnabled = True
 
 		#WalkThe list of modules to find our configuration files.. 
 		BasicIdent = "multusOVPNClient"
@@ -99,12 +96,14 @@ class multusOVPNClientClass(object):
 				else:
 					self.ObjmultusOVPNClientConfig = libmultusOVPNClient.multusOVPNClientConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusOVPNClientConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjmultusOVPNClientConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusOVPNClientConfig.Ident = Ident
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
-				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
-				self.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				self.ObjmultusOVPNClientConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjmultusOVPNClientConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort
+				self.ObjmultusOVPNClientConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				# 2021-02-07
+				self.ObjmultusOVPNClientConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled
 				break
 
 		self.LogFile = self.ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -120,13 +119,13 @@ class multusOVPNClientClass(object):
 
 		## Do the PIDFIle
 		try:
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjmultusOVPNClientConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjmultusOVPNClientConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjmultusOVPNClientConfig.LPIDFile)
 			self.ProcessIsRunningTwice = False
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.LPIDFile)
+			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.ObjmultusOVPNClientConfig.LPIDFile)
 			sys.exit(1)
 
 		self.ObjmultusdTools.logger.debug("Started up.. initializing finished")
@@ -136,7 +135,7 @@ class multusOVPNClientClass(object):
 	def __del__(self):
 		try:
 			if not self.ProcessIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjmultusOVPNClientConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools .FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -157,12 +156,8 @@ class multusOVPNClientClass(object):
 
 	def haupt (self, bDaemon):
 
-		PercentageOff = 80.0 
-		multusdPingInterval = self.ModuleControlMaxAge - (self.ModuleControlMaxAge * PercentageOff/100.0)
-		print ("multus Ping Interval: " + str(multusdPingInterval))
-
 		self.ObjmultusOVPNClientOperate = libmultusOVPNClient.multusOVPNClientOperateClass(self.ObjmultusOVPNClientConfig, self.ObjmultusdTools)
-		self.ObjmultusOVPNClientOperate.RungRPCServer(multusdPingInterval, bDaemon and self.ModuleControlPortEnabled, self.ModuleControlPort)
+		self.ObjmultusOVPNClientOperate.RungRPCServer(bDaemon and self.ObjmultusOVPNClientConfig.ModuleControlPortEnabled)
 
 		print ("Exiting multusOVPNClient Main-Program")
 

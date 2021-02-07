@@ -12,8 +12,8 @@ import configparser
 
 sys.path.append('/multus/lib')
 ## do the Periodic Alive Stuff
-import multusdControlSocketClient
 import multusdBasicConfigfileStuff
+import libmultusdClientBasisStuff
 
 # 2020-06-01
 # Json config option
@@ -125,15 +125,13 @@ class multusdClientTemplateConfigClass(multusdBasicConfigfileStuff.ClassBasicCon
 ###
 ### The main Class, weher all jobs are done
 ### 
-class multusdClientTemplateOperateClass(object):
+class multusdClientTemplateOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 	def __init__(self, ObjmultusdClientTemplateConfig, ObjmultusdTools):
+		# init parent class
+		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, ObjmultusdClientTemplateConfig, ObjmultusdTools)
 
 		self.ObjmultusdClientTemplateConfig = ObjmultusdClientTemplateConfig
-		self.ObjmultusdTools = ObjmultusdTools
 
-		self.KeepThreadRunning = True
-		self.multusdPingInterval = 5.0
-		self.ObjPeriodic = None
 		return
 
 	############################################################
@@ -142,79 +140,8 @@ class multusdClientTemplateOperateClass(object):
 		pass
 
 	############################################################
-	def SetupPeriodicmessages(self, bPeriodicmultusdSocketPingEnable):
-		bSuccess = False
-
-		MaxSleepingTime = 1.0
-		SleepingTime = MaxSleepingTime
-		
-		try:
-			## We do the peridic stuff 5 times per period, so we get it right when checking it
-			self.multusdPingInterval = self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge / 5.0
-
-			## setup the periodic alive mnessage stuff
-			if bPeriodicmultusdSocketPingEnable:
-				self.ObjmultusdTools.logger.debug("Setup the periodic Alive messages")
-				self.TimestampNextmultusdPing = time.time()
-				self.ObjPeriodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', self.ObjmultusdClientTemplateConfig.ModuleControlPort)
-				if not self.ObjPeriodic.ConnectFeedbackSocket():
-					self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
-					sys.exit(1)
-
-			# 2021-01-31 
-			# do the touch thing to check alive status even if no control socket is activated
-			if self.ObjmultusdClientTemplateConfig.ModuleControlFileEnabled:
-				## maybe we do the checking only by timstamp of PID file and not by control port
-				if not self.ObjPeriodic:
-																										# dummy parameters
-					self.ObjPeriodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', 888)
-				
-				## initialize the timspamp based stuff
-																				## We do it twice as often as required, to ease the checking
-				self.ObjPeriodic.InitCheckByThouch(self.ObjmultusdClientTemplateConfig.LPIDFile, (self.ObjmultusdClientTemplateConfig.ModuleControlMaxAge / 5.0))
-				## We do the first check right here.. might be better after a shutdown by 9
-				self.ObjPeriodic.DoCheckByTouch(time.time())
-
-			# 2020-01-01
-			# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
-			SleepingTime = self.multusdPingInterval
-			if self.multusdPingInterval > MaxSleepingTime:
-				SleepingTime = MaxSleepingTime
-
-			bSuccess = True
-
-		except:
-			ErrorString = self.ObjmultusdTools.FormatException()	
-			self.ObjmultusdTools.logger.debug("SetupPeriodicmessages Fatal error setting up perodic stuff: " + ErrorString)
-
-		return SleepingTime, bSuccess 
-
-	############################################################
-	def DoPeriodicMessage(self, bPeriodicmultusdSocketPingEnable):
-		bSuccess = True
-		Timestamp = time.time()
-
-		## first we do the control port stuff and talk to the multud
-		if bPeriodicmultusdSocketPingEnable and self.ObjPeriodic:
-			if Timestamp >= self.TimestampNextmultusdPing:
-				self.ObjPeriodic.SendPeriodicMessage()
-				self.TimestampNextmultusdPing = time.time() + self.multusdPingInterval
-				
-			if self.ObjPeriodic.WeAreOnError:
-				self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
-				bSuccess = false
-
-		# 2021-01-31
-		# Addition do the PID file touch stuff as well
-		# the multusd checks the timestamp of the PID file.. it should not be too old..
-		if self.ObjPeriodic:
-			self.ObjPeriodic.DoCheckByTouch(Timestamp)
-
-		return bSuccess 
-
-	############################################################
 	###
-	### main funtion running the mein loop
+	### main funtion running the main loop
 	###
 	def Operate(self, bPeriodicmultusdSocketPingEnable):
 

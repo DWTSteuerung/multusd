@@ -18,10 +18,9 @@ import os
 import configparser
 
 sys.path.append('/multus/lib')
+import libmultusdClientBasisStuff
 import multusdBasicConfigfileStuff
-"""
-import libmultusdBNKStatus
-"""
+#import libDSVIntegrityStatus
 import libmultusLAN
 
 ## now the protobuf stuff
@@ -47,16 +46,16 @@ import json
 # to have a class like this
 #
 class FailSafeClass(object):
-	def __init__(self, Tools, ModuleConfig, Ident, dBNKEnabled):
+	def __init__(self, Tools, ModuleConfig, Ident, DSVIntegrityEnabled):
 		
 		self.Ident = Ident
 
-				## We get the gRPC stuff for doing refresh on dBNK, if enabled
-		self.ObjdBNKStatus = None
+				## We get the gRPC stuff for doing refresh on DSVIntegrity, if enabled
+		self.ObjDSVIntegrityStatus = None
 		"""
-		if dBNKEnabled:
-			self.ObjdBNKStatus = libmultusdBNKStatus.gRPCdBNKStatusClass(Tools)
-			self.ObjdBNKStatus.gRPCSetupdBNKConnection()
+		if DSVIntegrityEnabled:
+			self.ObjDSVIntegrityStatus = libDSVIntegrityStatus.gRPCDSVIntegrityStatusClass(Tools)
+			self.ObjDSVIntegrityStatus.gRPCSetupDSVIntegrityConnection()
 		"""
 		
 		self.RefreshPeriodicInterval = 10.0
@@ -65,27 +64,27 @@ class FailSafeClass(object):
 		return
 
 	def SetIntoFailSafeState(self, ProcessIsRunning):
-		if self.ObjdBNKStatus:
-			self.ObjdBNKStatus.gRPCSendProcessStatusmultusd(self.Ident, False, bForce = True)
+		if self.ObjDSVIntegrityStatus:
+			self.ObjDSVIntegrityStatus.gRPCSendProcessStatusmultusd(self.Ident, False, bForce = True)
 		return
 
 	def ExecuteAfterStop(self, ProcessIsRunning):
-		if self.ObjdBNKStatus:
-			self.ObjdBNKStatus.gRPCSendProcessStatusmultusd(self.Ident, False, bForce = True)
+		if self.ObjDSVIntegrityStatus:
+			self.ObjDSVIntegrityStatus.gRPCSendProcessStatusmultusd(self.Ident, False, bForce = True)
 
 		return
 
 	def ExecuteAfterStart(self, ProcessIsRunning):
-		if self.ObjdBNKStatus:
-			self.ObjdBNKStatus.gRPCSendProcessStatusmultusd(self.Ident, ProcessIsRunning, bForce = True)
+		if self.ObjDSVIntegrityStatus:
+			self.ObjDSVIntegrityStatus.gRPCSendProcessStatusmultusd(self.Ident, ProcessIsRunning, bForce = True)
 
 		return
 
 	def ExecutePeriodic(self, ProcessIsRunning):
-		if self.ObjdBNKStatus:
+		if self.ObjDSVIntegrityStatus:
 			Timestamp = time.time()
 			if Timestamp >= self.NextRefreshPeriodic:
-				self.ObjdBNKStatus.gRPCSendProcessStatusmultusd(self.Ident, ProcessIsRunning, bForce = False)
+				self.ObjDSVIntegrityStatus.gRPCSendProcessStatusmultusd(self.Ident, ProcessIsRunning, bForce = False)
 				self.NextRefreshPeriodic = time.time() + self.RefreshPeriodicInterval
 
 		return
@@ -97,7 +96,13 @@ class multusLANWANCheckConfigClass(multusdBasicConfigfileStuff.ClassBasicConfigf
 		multusdBasicConfigfileStuff.ClassBasicConfigfileStuff.__init__(self)
 
 		self.ConfigFile = ConfigFile
-		self.SoftwareVersion = "20"
+
+		# 2021-02-07
+		self.SoftwareVersion = "1"
+		
+		self.ModuleControlPortEnabled = True
+		self.ModuleControlFileEnabled = False
+		self.ModuleControlPort = 43000
 		
 		return
 
@@ -274,13 +279,12 @@ class gRPCServiceServicer(LANWANOVPNCheck_pb2_grpc.gRPCServiceServicer):
 		return LANWANOVPNCheck_pb2.LANWANOVPNCheckVersions(**result)
 
 
-class gRPCOperateClass(object):
+class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 	def __init__(self, ObjmultusLANWANCheckConfig, ObjmultusdTools):
+		# init parent class
+		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, ObjmultusLANWANCheckConfig, ObjmultusdTools)
 
 		self.ObjmultusLANWANCheckConfig = ObjmultusLANWANCheckConfig
-		self.ObjmultusdTools = ObjmultusdTools
-
-		self.KeepThreadRunning = True
 		
 		self.LANCheckInterval = 10.0
 
@@ -289,18 +293,25 @@ class gRPCOperateClass(object):
 		return
 
 	def __del__(self):
-		self.ObjdBNKStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, False, bForce = True)
+		self.ObjDSVIntegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, False, bForce = True)
 		return
 
-	def RungRPCServer(self, multusdPingInterval, periodic):
-		TimestampNextmultusdPing = time.time()
+	############################################################
+	###
+	### main funtion running the main loop
+	###
+	#def RungRPCServer(self, multusdPingInterval, periodic):
+	def RungRPCServer(self, bPeriodicmultusdSocketPingEnable):
+		## setup the periodic control stuff..
+		## if this does not succeed .. we do not have to continue
+		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
 		TimestampNextLANCheck = time.time()
 		TimestampNextWANCheck = time.time()
 		
 		# declare a server object with desired number
 		# of thread pool workers.
-		self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+		self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
  
 		# This line can be ignored
 		LANWANOVPNCheck_pb2_grpc.add_gRPCServiceServicer_to_server(gRPCServiceServicer(self.ObjmultusdTools, self.ObjConnectionChecks),self.gRPCServer)
@@ -313,51 +324,37 @@ class gRPCOperateClass(object):
 		self.ObjmultusdTools.logger.debug('gRPCService Server running ...')
 
 		OldProcessHealthStatus = self.ObjConnectionChecks.ProcessHealthStatus
-		self.ObjdBNKStatus = None
-		print ("multusdBNK Enabled: " + str(self.ObjmultusLANWANCheckConfig.dBNKEnabled))
-		"""
-		if self.ObjmultusLANWANCheckConfig.dBNKEnabled:
-			self.ObjdBNKStatus = libmultusdBNKStatus.gRPCdBNKStatusClass(self.ObjmultusdTools)
-			self.ObjdBNKStatus.gRPCSetupdBNKConnection()
-		"""
+		self.ObjDSVIntegrityStatus = None
+		print ("multusDSVIntegrity Enabled: " + str(self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled))
+		if self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled:
+			self.ObjDSVIntegrityStatus = libDSVIntegrityStatus.gRPCDSVIntegrityStatusClass(self.ObjmultusdTools)
+			self.ObjDSVIntegrityStatus.gRPCSetupDSVIntegrityConnection()
 
 		while self.KeepThreadRunning:
-			# 2020-01-01
-			# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
-			SleepingTime = multusdPingInterval
-			if multusdPingInterval > 1.0:
-				SleepingTime = 1.0
-			#self.ObjmultusdTools.logger.debug('gRPCService while loop, SleepingTime: ' + str(SleepingTime))
+			## We do the periodic messages and stuff to indicate that we are alive for the multusd
+			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 
 			Timestamp = time.time()
-			if periodic and Timestamp >= TimestampNextmultusdPing:
-				periodic.SendPeriodicMessage()
-				TimestampNextmultusdPing = time.time() + multusdPingInterval
-								
-				if periodic.WeAreOnError:
-					self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
-					self.KeepThreadRunning = False
-
-			Timestamp = time.time()
-			if Timestamp >= TimestampNextLANCheck: 
+			if self.ObjmultusLANWANCheckConfig.LANCheckEnable and Timestamp >= TimestampNextLANCheck: 
 				self.ObjConnectionChecks.runLANCheck()
 				TimestampNextLANCheck = Timestamp + self.LANCheckInterval
 				SleepingTime = 0.0
 
-			if self.ObjmultusLANWANCheckConfig.WANCheckEnable:
+			if self.ObjmultusLANWANCheckConfig.WANCheckEnable and self.ObjmultusLANWANCheckConfig.WANCheckEnable:
 				Timestamp = time.time()
 				if Timestamp >= TimestampNextWANCheck:
 					self.ObjConnectionChecks.runWANCheck(self.ObjmultusLANWANCheckConfig.WANCheckAdresses)
 					TimestampNextWANCheck = Timestamp + self.ObjmultusLANWANCheckConfig.WANCheckInterval
 					SleepingTime = 0.0
 
-			## the most important assignment, which is evaluated by dBNK
-			self.ObjConnectionChecks.ProcessHealthStatus = self.ObjConnectionChecks.LANConnectionStatus.ConnectionStatus and self.ObjConnectionChecks.WANConnectionStatus.ConnectionStatus
-			if self.ObjmultusLANWANCheckConfig.dBNKEnabled and OldProcessHealthStatus != self.ObjConnectionChecks.ProcessHealthStatus:
-				self.ObjdBNKStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = True)
+			## the most important assignment, which is evaluated by DSVIntegrity
+			self.ObjConnectionChecks.ProcessHealthStatus = (self.ObjConnectionChecks.LANConnectionStatus.ConnectionStatus or not self.ObjmultusLANWANCheckConfig.LANCheckEnable) and (self.ObjConnectionChecks.WANConnectionStatus.ConnectionStatus or not self.ObjmultusLANWANCheckConfig.WANCheckEnable)
+
+			if self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled and OldProcessHealthStatus != self.ObjConnectionChecks.ProcessHealthStatus:
+				self.ObjDSVIntegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = True)
 				OldProcessHealthStatus = self.ObjConnectionChecks.ProcessHealthStatus
-			elif self.ObjmultusLANWANCheckConfig.dBNKEnabled:
-				self.ObjdBNKStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = False)
+			elif self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled:
+				self.ObjDSVIntegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = False)
 
 			if self.KeepThreadRunning:
 				time.sleep (SleepingTime)

@@ -61,8 +61,6 @@ class multusReadDIDOClass(object):
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
 		self.ProcessIsRunningTwice = True
-		self.ModuleControlPort = 43000
-		self.ModuleControlPortEnabled = True
 
 		#WalkThe list of modules to find our configuration files.. 
 		Ident = "multusReadDIDO"
@@ -77,12 +75,14 @@ class multusReadDIDOClass(object):
 				else:
 					self.ObjmultusReadDIDOConfig = libmultusReadDIDO.multusReadDIDOConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusReadDIDOConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjmultusReadDIDOConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusReadDIDOConfig.Ident = Ident
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
-				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
-				self.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				self.ObjmultusReadDIDOConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjmultusReadDIDOConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				self.ObjmultusReadDIDOConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				# 2021-02-07
+				self.ObjmultusReadDIDOConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled
 				break
 
 		self.LogFile = self.ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -98,13 +98,13 @@ class multusReadDIDOClass(object):
 
 		## Do the PIDFIle
 		try:
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjmultusReadDIDOConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjmultusReadDIDOConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjmultusReadDIDOConfig.LPIDFile)
 			self.ProcessIsRunningTwice = False
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.LPIDFile)
+			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.ObjmultusReadDIDOConfig.LPIDFile)
 			sys.exit(1)
 
 		self.ObjmultusdTools.logger.debug("Started up.. initializing finished")
@@ -114,7 +114,7 @@ class multusReadDIDOClass(object):
 	def __del__(self):
 		try:
 			if not self.ProcessIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjmultusReadDIDOConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools .FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -135,12 +135,8 @@ class multusReadDIDOClass(object):
 
 	def haupt (self, bDaemon):
 
-		PercentageOff = 80.0 
-		multusdPingInterval = self.ModuleControlMaxAge - (self.ModuleControlMaxAge * PercentageOff/100.0)
-		print ("multus Ping Interval: " + str(multusdPingInterval))
-
 		self.ObjmultusReadDIDOOperate = libmultusReadDIDO.multusReadDIDOOperateClass(self.ObjmultusReadDIDOConfig, self.ObjmultusdTools)
-		self.ObjmultusReadDIDOOperate.Operate(multusdPingInterval, bDaemon and self.ModuleControlPortEnabled, self.ModuleControlPort)
+		self.ObjmultusReadDIDOOperate.Operate(bDaemon and self.ObjmultusReadDIDOConfig.ModuleControlPortEnabled)
 
 		print ("Exiting multusReadDIDO Main-Program")
 

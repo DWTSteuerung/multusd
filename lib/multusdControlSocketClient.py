@@ -16,6 +16,8 @@ class ClassControlSocketClient(object):
 	def __init__(self, ObjmultusdTools, Host, Port):
 		self.ObjmultusdTools = ObjmultusdTools	
 
+		self.sock = None
+
 		# Connect the socket to the port where the server is listening
 		self.ServerAddress = (Host, Port)
 
@@ -29,6 +31,8 @@ class ClassControlSocketClient(object):
 		## setup additional schecking b
 		self.bCheckByTouchInitialized = False
 		self.bFailureLOggingDone = False
+
+		self.ObjmultusdTools.logger.debug(str(os.getpid()) + " Class: ClassControlSocketClient initialized ServerAdress: " + str(self.ServerAddress))
 
 		return
 
@@ -58,12 +62,13 @@ class ClassControlSocketClient(object):
 
 	def __del__(self):
 		print ("Exiting Object: ClassControlSocketClient")
-		try:
-			self.ObjmultusdTools.logger.debug(str(os.getpid()) + " We close our Feedback socket")
-			self.sock.close()
-		except:
-			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug(str(os.getpid()) + " Error closing FB Socket: " + ErrorString)
+		if self.sock:
+			try:
+				self.ObjmultusdTools.logger.debug(str(os.getpid()) + " We close our Feedback socket")
+				self.sock.close()
+			except:
+				ErrorString = self.ObjmultusdTools.FormatException()
+				self.ObjmultusdTools.logger.debug(str(os.getpid()) + " Error closing FB Socket: " + ErrorString)
 			
 		return
 

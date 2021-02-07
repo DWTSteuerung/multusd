@@ -67,14 +67,12 @@ class multusLANWANCheckClass(object):
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
 		self.ProcessIsRunningTwice = True
-		self.ModuleControlPort = 43000
-		self.ModuleControlPortEnabled = True
 
-		# First we check, whether the dBNK is enabled
-		dBNKEnabled = False
+		# First we check, whether the DSVIntegrity is enabled
+		DSVIntegrityEnabled = False
 		for Module in ObjmultusdModulesConfig.AllModules:
-			if Module.ModuleParameter.ModuleIdentifier == "multusdBNK" and Module.ModuleParameter.Enabled:
-				dBNKEnabled = True
+			if Module.ModuleParameter.ModuleIdentifier == "DSVIntegrity" and Module.ModuleParameter.Enabled:
+				DSVIntegrityEnabled = True
 				break
 
 		#WalkThe list of modules to find our configuration files.. 
@@ -93,10 +91,12 @@ class multusLANWANCheckClass(object):
 					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusLANWANCheckConfig.Ident = Ident
-				self.ObjmultusLANWANCheckConfig.dBNKEnabled = dBNKEnabled 
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
-				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
-				self.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled = DSVIntegrityEnabled 
+				self.ObjmultusLANWANCheckConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjmultusLANWANCheckConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				self.ObjmultusLANWANCheckConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				# 2021-02-07
+				self.ObjmultusLANWANCheckConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled
 				break
 
 	
@@ -113,14 +113,14 @@ class multusLANWANCheckClass(object):
 
 		## Do the PIDFIle
 		try:
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjmultusLANWANCheckConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjmultusLANWANCheckConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjmultusLANWANCheckConfig.LPIDFile)
 
 			self.ProcessIsRunningTwice = False
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.LPIDFile)
+			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.ObjmultusLANWANCheckConfig.LPIDFile)
 			sys.exit(1)	
 
 		self.ObjmultusdTools.logger.debug("Started up.. initializing finished")
@@ -130,7 +130,7 @@ class multusLANWANCheckClass(object):
 	def __del__(self):
 		try:
 			if not self.ProcessIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjmultusLANWANCheckConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -151,23 +151,8 @@ class multusLANWANCheckClass(object):
 
 	def haupt (self, bDaemon):
 		
-		periodic = None
-
-		## setup the periodic alive mnessage stuff
-		if bDaemon and self.ModuleControlPortEnabled:
-			print ("Setup the periodic Alive messages")
-			periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', self.ModuleControlPort)
-			if not periodic.ConnectFeedbackSocket():
-				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
-				sys.exit(1)
-
-		PercentageOff = 90.0 
-		multusdPingInterval = self.ModuleControlMaxAge - (self.ModuleControlMaxAge * PercentageOff/100.0)
-		print ("multus Ping Interval: " + str(multusdPingInterval))
-
-	
 		self.LANWANCheckServer = libmultusLANWANCheck.gRPCOperateClass(self.ObjmultusLANWANCheckConfig, self.ObjmultusdTools)
-		self.LANWANCheckServer.RungRPCServer(multusdPingInterval, periodic)
+		self.LANWANCheckServer.RungRPCServer(bDaemon and self.ObjmultusLANWANCheckConfig.ModuleControlPortEnabled)
 
 		self.ObjmultusdTools.logger.debug(" Stopped")
 	

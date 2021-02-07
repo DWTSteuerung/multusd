@@ -39,7 +39,9 @@ if libmultusModbus.UseJsonConfig:
 	import libmultusdJson
 	import libmultusdJsonModuleConfig
 
-class multusModbusClass(object):
+import libmultusdClientBasisStuff
+
+class multusModbusClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 	def __init__(self):
 		self.ObjmultusdTools = multusdTools.multusdToolsClass()
 
@@ -64,8 +66,6 @@ class multusModbusClass(object):
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
 		self.ProcessIsRunningTwice = True
-		self.ModuleControlPort = None
-		self.ModuleControlPortEnabled = True
 
 		#WalkThe list of modules to find our configuration files.. 
 		Ident = "multusModbus"
@@ -81,12 +81,14 @@ class multusModbusClass(object):
 					## get the config data
 					self.ObjModbusConfig = libmultusModbus.ModbusConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjModbusConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjModbusConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				# some more parameters
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
-				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
-				self.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				self.ObjModbusConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjModbusConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				self.ObjModbusConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				# 2021-02-07
+				self.ObjModbusConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled
 				break
 
 		self.LogFile = self.ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -106,23 +108,25 @@ class multusModbusClass(object):
 
 		## Do the PIDFIle
 		try:
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjModbusConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjModbusConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjModbusConfig.LPIDFile)
 			self.ProcessIsRunningTwice = False
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.LPIDFile)
+			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.ObjModbusConfig.LPIDFile)
 			sys.exit(1)
 
 		self.ObjmultusdTools.logger.debug("Started up.. initializing finished")
 
+		# init parent class
+		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, self.ObjModbusConfig, self.ObjmultusdTools)
 		return
 
 	def __del__(self):
 		try:
 			if not self.ProcessIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjModbusConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools .FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -158,18 +162,17 @@ class multusModbusClass(object):
 			
 			sys.exit(0)
 
+	############################################################
+	###
+	### main funtion running the main loop
+	###
 	def haupt (self, bDeamonized):
 		## setup the periodic alive mnessage stuff
-		if bDeamonized and self.ModuleControlPortEnabled:
-			print ("Setup the periodic Alive messages")
-			self.periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', self.ModuleControlPort)
-			if not self.periodic.ConnectFeedbackSocket():
-				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
-				sys.exit(1)
+		bPeriodicmultusdSocketPingEnable = bDeamonized and self.ModuleControlPortEnabled:
+		## setup the periodic control stuff..
+		## if this does not succeed .. we do not have to continue
+		SleepingTime, self.ModbusThread.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
-		Percentage = 20.0 
-		SleepingTime = (self.ModuleControlMaxAge - (self.ModuleControlMaxAge * Percentage / 100.0))
-		
 		nRestart = 0
 		MaxRestarts = 10
 		## Thread anlegen
@@ -179,23 +182,21 @@ class multusModbusClass(object):
 		self.ModbusThread.KeepThreadRunning = True
 
 		## it the ModBus Process fails too often, we quit... the multusd will restart us again
-		while (nRestart < MaxRestarts):
+		while (self.ModbusThread.KeepThreadRunning and nRestart < MaxRestarts):
 
-			## DO the peridoc call against the multusd
-			if bDeamonized and self.ModuleControlPortEnabled:
-				self.periodic.SendPeriodicMessage()
+			## We do the periodic messages and stuff to indicate that we are alive for the multusd
+			self.ModbusThread.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 
 			if not self.ModbusThread.is_alive():
 				if nRestart > 0:
 					self.ModbusThread.join()
 
-
 				self.ModbusThread.start()
 				nRestart = nRestart + 1
 				self.ObjmultusdTools.logger.debug("Started Modbus Listening Thread ...  Start #: " + str(nRestart))
 
-			
-			time.sleep (SleepingTime)
+			if self.ModbusThread.KeepThreadRunning:
+				time.sleep (SleepingTime)
 
 # End Class
 #########################################################################

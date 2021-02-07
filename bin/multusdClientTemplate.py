@@ -109,7 +109,7 @@ class multusdClientTemplateClass(object):
 					self.ObjmultusdClientTemplateConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusdClientTemplateConfig.Ident = Ident
-				self.ObjmultusdClientTemplateConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				self.ObjmultusdClientTemplateConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort
 				
 				## 2021-01-31 .. extended it by the PID file control
 				self.ObjmultusdClientTemplateConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile

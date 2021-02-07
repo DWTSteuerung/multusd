@@ -18,7 +18,7 @@ from concurrent import futures
 
 sys.path.append('/multus/lib')
 ## do the Periodic Alive Stuff
-import multusdControlSocketClient
+import libmultusdClientBasisStuff
 #import multusdBasicConfigfileStuff
 import DWTThriftConfig3
 import multusHardwareHandler
@@ -79,9 +79,14 @@ class multusReadDIDOConfigClass(DWTThriftConfig3.ConfigDataClass):
 		#multusdBasicConfigfileStuff.ClassBasicConfigfileStuff.__init__(self)
 
 		self.ConfigFile = ConfigFile
+		self.Instance = 0
+
+		# 2021-02-07
 		self.SoftwareVersion = "1"
 		
-		self.Instance = 0
+		self.ModuleControlPortEnabled = True
+		self.ModuleControlFileEnabled = False
+		self.ModuleControlPort = 43000
 	
 		return
 
@@ -268,13 +273,12 @@ class gRPCmultusReadDIDOServicerClass(multusReadDIDO_pb2_grpc.gRPCmultusReadDIDO
 ############################################################################################################
 ############################################################################################################
 
-class multusReadDIDOOperateClass(object):
+class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 	def __init__(self, ObjmultusReadDIDOConfig, ObjmultusdTools):
+		# init parent class
+		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, ObjmultusReadDIDOConfig, ObjmultusdTools)
 
 		self.ObjmultusReadDIDOConfig = ObjmultusReadDIDOConfig
-		self.ObjmultusdTools = ObjmultusdTools
-
-		self.KeepThreadRunning = True
 
 		self.ObjmultusHardware = multusHardwareHandler.multusHardwareHandlerClass(self.ObjmultusReadDIDOConfig, self.ObjmultusdTools)
 		return
@@ -283,17 +287,15 @@ class multusReadDIDOOperateClass(object):
 		print ("leaving multusReadDIDOOperateClass")
 		pass
 
-	def Operate(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
-
-		## setup the periodic alive mnessage stuff
-		periodic = None
-		if bPeriodicEnable:
-			print ("Setup the periodic Alive messages")
-			TimestampNextmultusdPing = time.time()
-			periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
-			if not periodic.ConnectFeedbackSocket():
-				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
-				sys.exit(1)
+	############################################################
+	###
+	### main funtion running the main loop
+	###
+	#def Operate(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
+	def Operate(self, bPeriodicmultusdSocketPingEnable):
+		## setup the periodic control stuff..
+		## if this does not succeed .. we do not have to continue
+		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
 		# declare a server object with desired number
 		# of thread pool workers.
@@ -312,23 +314,12 @@ class multusReadDIDOOperateClass(object):
 		self.gRPCServer.start()
 		self.ObjmultusdTools.logger.debug('gRPCmultusReadDIDO Server running ...')
 
-		# 2020-01-01
-		# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
-		SleepingTime = multusdPingInterval
-		if multusdPingInterval > 1.0:
-			SleepingTime = 1.0
-
 		NextPeriodicTransfer = 0
 		while self.KeepThreadRunning:
-			
+			## We do the periodic messages and stuff to indicate that we are alive for the multusd
+			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
+
 			Timestamp = time.time()
-			if periodic and Timestamp >= TimestampNextmultusdPing:
-				periodic.SendPeriodicMessage()
-				TimestampNextmultusdPing = time.time() + multusdPingInterval
-								
-				if periodic.WeAreOnError:
-					self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
-					self.KeepThreadRunning = False
 
 			if self.ObjmultusReadDIDOConfig.ReadInDIEnable:
 				print ("We read in all Digital Inputs at once")

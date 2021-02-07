@@ -15,7 +15,11 @@ sys.path.append('/multus/lib')
 import DWTThriftConfig3
 import multusHardwareHandler
 
-UseJsonConfig = False
+# 2020-06-01
+# Json config option
+import libUseJsonConfig
+UseJsonConfig = libUseJsonConfig.UseJsonConfig
+import urllib.request
 ############################################################################################################
 #
 # 2019-12-07
@@ -24,7 +28,7 @@ UseJsonConfig = False
 # to have a class like this
 #
 class FailSafeClass(object):
-	def __init__(self, Tools, ModuleConfig, Ident, dBNKEnabled):
+	def __init__(self, Tools, ModuleConfig, Ident, DSVIntegrityEnabled):
 		
 		self.Ident = Ident
 
@@ -61,6 +65,13 @@ class StatusLEDConfigClass(DWTThriftConfig3.ConfigDataClass):
 		self.LEDVPNEnable = None
 		self.OutputPIN = None
 
+		# 2021-02-07
+		self.SoftwareVersion = "1"
+		
+		self.ModuleControlPortEnabled = True
+		self.ModuleControlFileEnabled = False
+		self.ModuleControlPort = 43000
+
 	def ReadConfig(self):
 		# config fuer die zu nutzenden Dateien
 		ConfVorhanden = os.path.isfile(self.ConfigFile)
@@ -93,7 +104,7 @@ class StatusLEDFunctionsClass(object):
 	
 		## get the hardware access
 		self.ObjmultusHardware = multusHardwareHandler.multusHardwareHandlerClass(self.ObjmultusStatusLEDConfig, self.ObjmultusdTools)
-		self.DOSet = self.ObjmultusHardware.InitDOSet()
+		self.DOSet = [ -1, -1, -1, -1, -1, -1, -1, -1 ]
 		return
 
 

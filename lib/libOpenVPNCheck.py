@@ -15,10 +15,9 @@ import os
 import configparser
 
 sys.path.append('/multus/lib')
+import libmultusdClientBasisStuff
 import libmultusLANWANCheck
-"""
-import libmultusdBNKStatus
-"""
+#import libDSVIntegrityStatus
 import multusdBasicConfigfileStuff
 
 ## now the protobuf stuff
@@ -44,17 +43,16 @@ import json
 # to have a class like this
 #
 class FailSafeClass(object):
-	def __init__(self, Tools, ModuleConfig, Ident, dBNKEnabled):
+	def __init__(self, Tools, ModuleConfig, Ident, DSVIntegrityEnabled):
 		
 		self.Ident = Ident
 
-				## We get the gRPC stuff for doing refresh on dBNK, if enabled
-		self.ObjdBNKStatus = None
-
+				## We get the gRPC stuff for doing refresh on DSVIntegrity, if enabled
+		self.ObjDSVintegrityStatus = None
 		"""
-		if dBNKEnabled:
-			self.ObjdBNKStatus = libmultusdBNKStatus.gRPCdBNKStatusClass(Tools)
-			self.ObjdBNKStatus.gRPCSetupdBNKConnection()
+		if DSVIntegrityEnabled:
+			self.ObjDSVintegrityStatus = libDSVIntegrityStatus.gRPCDSVIntegrityStatusClass(Tools)
+			self.ObjDSVintegrityStatus.gRPCSetupDSVIntegrityConnection()
 		"""
 		
 		self.RefreshPeriodicInterval = 10.0
@@ -63,27 +61,27 @@ class FailSafeClass(object):
 		return
 
 	def SetIntoFailSafeState(self, ProcessIsRunning):
-		if self.ObjdBNKStatus:
-			self.ObjdBNKStatus.gRPCSendProcessStatusmultusd(self.Ident, False, bForce = True)
+		if self.ObjDSVintegrityStatus:
+			self.ObjDSVintegrityStatus.gRPCSendProcessStatusmultusd(self.Ident, False, bForce = True)
 		return
 
 	def ExecuteAfterStop(self, ProcessIsRunning):
-		if self.ObjdBNKStatus:
-			self.ObjdBNKStatus.gRPCSendProcessStatusmultusd(self.Ident, False, bForce = True)
+		if self.ObjDSVintegrityStatus:
+			self.ObjDSVintegrityStatus.gRPCSendProcessStatusmultusd(self.Ident, False, bForce = True)
 
 		return
 
 	def ExecuteAfterStart(self, ProcessIsRunning):
-		if self.ObjdBNKStatus:
-			self.ObjdBNKStatus.gRPCSendProcessStatusmultusd(self.Ident, ProcessIsRunning, bForce = True)
+		if self.ObjDSVintegrityStatus:
+			self.ObjDSVintegrityStatus.gRPCSendProcessStatusmultusd(self.Ident, ProcessIsRunning, bForce = True)
 
 		return
 
 	def ExecutePeriodic(self, ProcessIsRunning):
-		if self.ObjdBNKStatus:
+		if self.ObjDSVintegrityStatus:
 			Timestamp = time.time()
 			if Timestamp >= self.NextRefreshPeriodic:
-				self.ObjdBNKStatus.gRPCSendProcessStatusmultusd(self.Ident, ProcessIsRunning, bForce = False)
+				self.ObjDSVintegrityStatus.gRPCSendProcessStatusmultusd(self.Ident, ProcessIsRunning, bForce = False)
 				self.NextRefreshPeriodic = time.time() + self.RefreshPeriodicInterval
 
 		return
@@ -95,8 +93,14 @@ class multusOVPNConfigClass(multusdBasicConfigfileStuff.ClassBasicConfigfileStuf
 		multusdBasicConfigfileStuff.ClassBasicConfigfileStuff.__init__(self)
 
 		self.ConfigFile = ConfigFile
-		self.SoftwareVersion = "20"
+
+		# 2021-02-07
+		self.SoftwareVersion = "1"
 		
+		self.ModuleControlPortEnabled = True
+		self.ModuleControlFileEnabled = False
+		self.ModuleControlPort = 43000
+	
 		return
 
 	def ReadConfig(self):
@@ -223,30 +227,38 @@ class gRPCServiceServicer(LANWANOVPNCheck_pb2_grpc.gRPCServiceServicer):
  
 		return LANWANOVPNCheck_pb2.ResponseMessage(**result)
 
-class gRPCOperateClass(object):
+class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 	def __init__(self, ObjmultusOpenVPNCheckConfig, ObjmultusdTools):
+		# init parent class
+		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, ObjmultusOpenVPNCheckConfig, ObjmultusdTools)
 
 		self.ObjmultusOpenVPNCheckConfig = ObjmultusOpenVPNCheckConfig
-		self.ObjmultusdTools = ObjmultusdTools
-
-		self.KeepThreadRunning = True
 		
 		self.ObjOVPNConnectionChecks = OVPNConnectionCheckClass(ObjmultusOpenVPNCheckConfig, ObjmultusdTools)
 
 		return
 
 	def __del__(self):
-		self.ObjdBNKStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, False, bForce = True)
+		self.ObjDSVintegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, False, bForce = True)
 		return
 
-	def RungRPCServer(self, multusdPingInterval, periodic):
+	############################################################
+	###
+	### main funtion running the main loop
+	###
+	#def RungRPCServer(self, multusdPingInterval, periodic):
+	def RungRPCServer(self, bPeriodicmultusdSocketPingEnable):
+		## setup the periodic control stuff..
+		## if this does not succeed .. we do not have to continue
+		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
+
 		TimestampNextmultusdPing = time.time()
 
 		TimestampNextOVPNCheck = time.time()
 		
 		# declare a server object with desired number
 		# of thread pool workers.
-		self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+		self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
  
 		# This line can be ignored
 		LANWANOVPNCheck_pb2_grpc.add_gRPCServiceServicer_to_server(gRPCServiceServicer(self.ObjmultusdTools, self.ObjOVPNConnectionChecks),self.gRPCServer)
@@ -259,30 +271,14 @@ class gRPCOperateClass(object):
 		self.ObjmultusdTools.logger.debug('gRPCService Server running ...')
 
 		OldProcessHealthStatus = self.ObjOVPNConnectionChecks.ProcessHealthStatus
-		self.ObjdBNKStatus = None
-
-		"""
-		if self.ObjmultusOpenVPNCheckConfig.dBNKEnabled:
-			self.ObjdBNKStatus = libmultusdBNKStatus.gRPCdBNKStatusClass(self.ObjmultusdTools)
-			self.ObjdBNKStatus.gRPCSetupdBNKConnection()
-		"""
+		self.ObjDSVintegrityStatus = None
+		if self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled:
+			self.ObjDSVintegrityStatus = libDSVIntegrityStatus.gRPCDSVIntegrityStatusClass(self.ObjmultusdTools)
+			self.ObjDSVintegrityStatus.gRPCSetupDSVIntegrityConnection()
 	
 		while self.KeepThreadRunning:
-			# 2020-01-01
-			# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
-			SleepingTime = multusdPingInterval
-			if multusdPingInterval > 1.0:
-				SleepingTime = 1.0
-			#self.ObjmultusdTools.logger.debug('gRPCService while loop, SleepingTime: ' + str(SleepingTime))
-
-			Timestamp = time.time()
-			if periodic and Timestamp >= TimestampNextmultusdPing:
-				periodic.SendPeriodicMessage()
-				TimestampNextmultusdPing = time.time() + multusdPingInterval
-								
-				if periodic.WeAreOnError:
-					self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
-					self.KeepThreadRunning = False
+			## We do the periodic messages and stuff to indicate that we are alive for the multusd
+			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 
 			if self.ObjmultusOpenVPNCheckConfig.OVPNCheckEnable:
 				Timestamp = time.time()
@@ -291,13 +287,17 @@ class gRPCOperateClass(object):
 					TimestampNextOVPNCheck = Timestamp + self.ObjmultusOpenVPNCheckConfig.OVPNCheckInterval
 					SleepingTime = 0.0
 
-			## the most important assignment, which is evaluated by dBNK
-			self.ObjOVPNConnectionChecks.ProcessHealthStatus = self.ObjOVPNConnectionChecks.OVPNConnectionStatus.ConnectionStatus
-			if self.ObjmultusOpenVPNCheckConfig.dBNKEnabled and OldProcessHealthStatus != self.ObjOVPNConnectionChecks.ProcessHealthStatus:
-				self.ObjdBNKStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, self.ObjOVPNConnectionChecks.ProcessHealthStatus, bForce = True)
+			## the most important assignment, which is evaluated by DSVIntegrity
+			if self.ObjmultusOpenVPNCheckConfig.OVPNCheckEnable:
+				self.ObjOVPNConnectionChecks.ProcessHealthStatus = self.ObjOVPNConnectionChecks.OVPNConnectionStatus.ConnectionStatus
+			else:
+				self.ObjOVPNConnectionChecks.ProcessHealthStatus = True
+				
+			if self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled and OldProcessHealthStatus != self.ObjOVPNConnectionChecks.ProcessHealthStatus:
+				self.ObjDSVintegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, self.ObjOVPNConnectionChecks.ProcessHealthStatus, bForce = True)
 				OldProcessHealthStatus = self.ObjOVPNConnectionChecks.ProcessHealthStatus
-			elif self.ObjmultusOpenVPNCheckConfig.dBNKEnabled:
-				self.ObjdBNKStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, self.ObjOVPNConnectionChecks.ProcessHealthStatus, bForce = False)
+			elif self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled:
+				self.ObjDSVintegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, self.ObjOVPNConnectionChecks.ProcessHealthStatus, bForce = False)
 
 			if self.KeepThreadRunning:
 				time.sleep (SleepingTime)

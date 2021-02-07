@@ -39,9 +39,9 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 				self.ModuleIsAService = True
 
 				self.ModuleBinaryStartupDirectlyEnable = False
-				self.ModuleBinaryPath = ""
-				self.ModuleBinary = ""
-				self.ModuleBinaryParameter = ""
+				self.ModuleBinaryPath = None
+				self.ModuleBinary = None
+				self.ModuleBinaryParameter = None
 				self.ModuleControlPort = 0
 				self.ModuleControlPortEnabled = False
 				self.ModuleControlFileEnabled = False
@@ -49,15 +49,15 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 				self.MaxTimeWaitForShutdown = 2.0
 
 				self.ModuleServiceUser = "admin"
-				self.ModuleStartScript = ""
-				self.ModuleStartScriptParameter = ""
-				self.ModuleStopScript = ""
-				self.ModuleStopScriptParameter = ""
-				self.ModuleStatusByPIDFileEnable = True
+				self.ModuleStartScript = None
+				self.ModuleStartScriptParameter = None
+				self.ModuleStopScript = None
+				self.ModuleStopScriptParameter = None
+				self.ModuleStatusByPIDFileEnable = False
 				self.ModuleStatusByPIDFilePeriod = 5.0
-				self.ModuleStatusScript = ""
-				self.ModuleStatusScriptParameter = ""
-				self.ModuleCheckScript = ""
+				self.ModuleStatusScript = None
+				self.ModuleStatusScriptParameter = None
+				self.ModuleCheckScript = None
 				self.ModulePeriodicCheckInterval = 300
 				self.ModulePeriodicCheckEnabled = False
 
@@ -79,7 +79,7 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 			self.ObjmultusdTools = None
 
 			# 2019-12-04
-			self.dBNKEnabled = False
+			self.DSVIntegrityEnabled = False
 
 			# 2021-01-31
 			self.NextDataExpected = 0
@@ -280,14 +280,20 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 					self.AllModules[-1].ModuleParameter.ModuleCheckScript = self.__assignNone__(ModuleConfig[Element]['ModuleCheckScript'])
 					## 2021-02-04
 					## in case that there is a real binary.. we need to have the PID File check enabled otherwise we lokk for the configured value
-					if not self.AllModules[-1].ModuleParameter.ModuleBinary:
-						self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFileEnable = self.__assignBool__(ModuleConfig[Element]['ModuleStatusByPIDFileEnable'])
+					#if not self.AllModules[-1].ModuleParameter.ModuleBinary:
+					self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFileEnable = self.__assignBool__(ModuleConfig[Element]['ModuleStatusByPIDFileEnable'])
 					
-					PIDFileperiod = self.__assignInt__(ModuleConfig[Element]['ModuleStatusByPIDFilePeriod'])
+					## We get the period of the PID file check from config only in case it is enabled
+					if self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFileEnable:
+						PIDFileperiod = self.__assignFloat__(ModuleConfig[Element]['ModuleStatusByPIDFilePeriod'])
+					else:
+						PIDFileperiod = 10.0
 
-					## the check period cannot be smallet than 5.0
-					if self.__assignInt__(ModuleConfig[Element]['ModuleStatusByPIDFilePeriod']) > 5.0:
-						self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFilePeriod = self.__assignInt__(ModuleConfig[Element]['ModuleStatusByPIDFilePeriod'])
+					## the check period cannot be smaller than 5.0
+					if PIDFileperiod < 5.0:
+						PIDFileperiod = 5.0
+
+					self.AllModules[-1].ModuleParameter.ModuleStatusByPIDFilePeriod = PIDFileperiod
 
 					self.AllModules[-1].ModuleParameter.ModuleStatusScript = self.__assignNone__(ModuleConfig[Element]['ModuleStatusScript'])
 					self.AllModules[-1].ModuleParameter.ModuleStatusScriptParameter = self.__assignNone__(ModuleConfig[Element]['ModuleStatusScriptParameter'])

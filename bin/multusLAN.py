@@ -34,8 +34,11 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # 2020-06-01
 # Json config option
-#import libmultusdJson
-#import libmultusdJsonModuleConfig
+# 2020-06-01
+# Json config option
+if libmultusLAN.UseJsonConfig:
+	import libmultusdJson
+	import libmultusdJsonModuleConfig
 
 ## 2019-12-30
 ## We want to run more, then just 1 instace of each process
@@ -82,8 +85,6 @@ class multusLANClass(object):
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
 		self.ProcessIsRunningTwice = True
-		self.ModuleControlPort = 43000
-		self.ModuleControlPortEnabled = True
 
 		#WalkThe list of modules to find our configuration files.. 
 		Ident = "multusLAN"
@@ -101,7 +102,7 @@ class multusLANClass(object):
 				else:
 					self.ObjmultusLANConfig = libmultusLAN.multusLANConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusLANConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjmultusLANConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 					self.ObjmultusLANConfig.ReloadProcess = self.ObjmultusdTools.multusdTMPDirectory + "/" + Ident + "/Reload"
 					self.ObjmultusLANConfig.ReloadNetworkFile = self.ObjmultusdTools.multusdTMPDirectory + "/" + Ident + "/ReloadNetwork"
 
@@ -113,7 +114,7 @@ class multusLANClass(object):
 				self.ObjmultusLANConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
 				## end modification
 
-				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				self.ObjmultusLANConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
 				break
 
 		self.LogFile = self.ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -166,12 +167,8 @@ class multusLANClass(object):
 
 	def haupt (self, bDaemon):
 
-		PercentageOff = 80.0 
-		multusdPingInterval = self.ObjmultusLANConfig.ModuleControlMaxAge - (self.ObjmultusLANConfig.ModuleControlMaxAge * PercentageOff/100.0)
-		print ("multus Ping Interval: " + str(multusdPingInterval))
-
 		self.ObjmultusLANOperate = libmultusLAN.multusLANOperateClass(self.ObjmultusLANConfig, self.ObjmultusdTools)
-		self.ObjmultusLANOperate.Operate(multusdPingInterval, bDaemon and self.ModuleControlPortEnabled, self.ModuleControlPort)
+		self.ObjmultusLANOperate.Operate(bDaemon and self.ObjmultusLANConfig.ModuleControlPortEnabled)
 
 		print ("Exiting multusLAN Main-Program")
 

@@ -63,14 +63,13 @@ class multusOVPNClass(object):
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
 		self.ProcessIsRunningTwice = True
-		self.ModuleControlPort = 43000
-		self.ModuleControlPortEnabled = True
 
-		# First we check, whether the dBNK is enabled
-		dBNKEnabled = False
+		# First we check, whether the DSVIntegrity is enabled
+		DSVIntegrityEnabled = False
 		for Module in ObjmultusdModulesConfig.AllModules:
-			if Module.ModuleParameter.ModuleIdentifier == "multusdBNK" and Module.ModuleParameter.Enabled:
-				dBNKEnabled = True
+			if Module.ModuleParameter.ModuleIdentifier == "DSVIntegrity" and Module.ModuleParameter.Enabled:
+				DSVIntegrityEnabled = True
+				print ("DSVIntegrity is enabled")
 				break
 
 		#WalkThe list of modules to find our configuration files.. 
@@ -86,13 +85,15 @@ class multusOVPNClass(object):
 				else:
 					self.ObjmultusOpenVPNCheckConfig = libOpenVPNCheck.multusOVPNConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusOpenVPNCheckConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjmultusOpenVPNCheckConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusOpenVPNCheckConfig.Ident = Ident
-				self.ObjmultusOpenVPNCheckConfig.dBNKEnabled = dBNKEnabled
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
-				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
-				self.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled = DSVIntegrityEnabled
+				self.ObjmultusOpenVPNCheckConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjmultusOpenVPNCheckConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				self.ObjmultusOpenVPNCheckConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				# 2021-02-07
+				self.ObjmultusOpenVPNCheckConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled
 				break
 
 		self.LogFile = self.ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -108,14 +109,14 @@ class multusOVPNClass(object):
 
 		## Do the PIDFIle
 		try:
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjmultusOpenVPNCheckConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjmultusOpenVPNCheckConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjmultusOpenVPNCheckConfig.LPIDFile)
 
 			self.ProcessIsRunningTwice = False
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.LPIDFile)
+			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.ObjmultusOpenVPNCheckConfig.LPIDFile)
 			sys.exit(1)	
 
 		self.ObjmultusdTools.logger.debug("Started up.. initializing finished")
@@ -125,7 +126,7 @@ class multusOVPNClass(object):
 	def __del__(self):
 		try:
 			if not self.ProcessIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjmultusOpenVPNCheckConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -146,23 +147,8 @@ class multusOVPNClass(object):
 
 	def haupt (self, bDaemon):
 		
-		periodic = None
-
-		## setup the periodic alive mnessage stuff
-		if bDaemon and self.ModuleControlPortEnabled:
-			print ("Setup the periodic Alive messages")
-			periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', self.ModuleControlPort)
-			if not periodic.ConnectFeedbackSocket():
-				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
-				sys.exit(1)
-
-		PercentageOff = 90.0 
-		multusdPingInterval = self.ModuleControlMaxAge - (self.ModuleControlMaxAge * PercentageOff/100.0)
-		print ("multus Ping Interval: " + str(multusdPingInterval))
-
-	
 		self.OVPNCheckServer = libOpenVPNCheck.gRPCOperateClass(self.ObjmultusOpenVPNCheckConfig, self.ObjmultusdTools)
-		self.OVPNCheckServer.RungRPCServer(multusdPingInterval, periodic)
+		self.OVPNCheckServer.RungRPCServer(bDaemon and self.ObjmultusOpenVPNCheckConfig.ModuleControlPortEnabled)
 
 		self.ObjmultusdTools.logger.debug(" Stopped")
 	

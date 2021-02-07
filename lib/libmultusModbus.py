@@ -29,7 +29,7 @@ UseJsonConfig = False
 # to have a class like this
 #
 class FailSafeClass(object):
-	def __init__(self, Tools, ModuleConfig, Ident, dBNKEnabled):
+	def __init__(self, Tools, ModuleConfig, Ident, DSVIntegrityEnabled):
 		
 		self.Ident = Ident
 		
@@ -61,6 +61,14 @@ class ModbusConfigClass(DWTThriftConfig3.ConfigDataClass):
 		self.ThriftMysqlOpts = None
 		self.MySQLThriftLoggingEnable = False
 		self.MySQLRestoreDOEnable = False
+
+		# 2021-02-07
+		self.SoftwareVersion = "1"
+		
+		self.ModuleControlPortEnabled = True
+		self.ModuleControlFileEnabled = False
+		self.ModuleControlPort = 43000
+
 		return
 
 	def ReadConfig(self):
