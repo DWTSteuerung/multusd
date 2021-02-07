@@ -11,8 +11,8 @@ import hashlib
 
 sys.path.append('/multus/lib')
 ## do the Periodic Alive Stuff
-import multusdControlSocketClient
 import DWTThriftConfig3
+import libmultusdClientBasisStuff
 
 # 2020-06-01
 # Json config option
@@ -60,6 +60,10 @@ class multusDeleteDuplicatesConfigClass(DWTThriftConfig3.ConfigDataClass):
 		self.ConfigFile = ConfigFile
 		self.SoftwareVersion = "1"
 	
+		self.ModuleControlPortEnabled = True
+		self.ModuleControlFileEnabled = False
+		self.ModuleControlPort = 43000
+		
 		return
 
 	def ReadConfig(self):
@@ -123,8 +127,11 @@ class multusDeleteDuplicatesConfigClass(DWTThriftConfig3.ConfigDataClass):
 
 ############################################################################################################
 
-class multusDeleteDuplicatesOperateClass(object):
+class multusDeleteDuplicatesOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 	def __init__(self, ObjmultusDeleteDuplicatesConfig, ObjmultusdTools):
+		# init parent class
+		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, ObjmultusDeleteDuplicatesConfig, ObjmultusdTools)
+
 
 		self.ObjmultusDeleteDuplicatesConfig = ObjmultusDeleteDuplicatesConfig
 		self.ObjmultusdTools = ObjmultusdTools
@@ -150,7 +157,7 @@ class multusDeleteDuplicatesOperateClass(object):
 
 		# MainFunction
 		for ExtendedPath, dirs, files in os.walk("."):
-			self.DoPeriodicMessage()
+			self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
 
 			if ExtendedPath and len(files):
 				Index_EP = None
@@ -175,7 +182,7 @@ class multusDeleteDuplicatesOperateClass(object):
 				"""
 
 				for FileName in files:
-					self.DoPeriodicMessage()
+					self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
 
 					Index_FI = None
 					while not Index_FI:
@@ -216,12 +223,12 @@ class multusDeleteDuplicatesOperateClass(object):
 		MaxElements = len(rows)
 		
 		for i in range(0, MaxElements -1):
-			self.DoPeriodicMessage()
+			self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
 		
 			for k in range(i + 1, MaxElements - 1):
-				self.DoPeriodicMessage()
+				self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
 				if rows[i][1] == rows[k][1]:
-					self.DoPeriodicMessage()
+					self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
 					print ("Found double file to Index_FI: " + str(rows[i][0]) + " Index " + str(rows[k][0]) + " is the same file")
 					SQL = "update Files set FI_DoubleIndex=" + str(rows[i][0]) + " where INDEX_FI=" + str(rows[k][0])
 					self.cursor.execute(SQL)
@@ -242,7 +249,7 @@ class multusDeleteDuplicatesOperateClass(object):
 		rows = self.cursor.fetchall()
 
 		for row in rows:
-			self.DoPeriodicMessage()
+			self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
 
 			DuplicateToDelete = os.path.join(row[1], row[2])
 			print ("We intend to delete File: " + DuplicateToDelete )
@@ -263,7 +270,7 @@ class multusDeleteDuplicatesOperateClass(object):
 	def DeleteEmptyDirectories(self):
 		DeletedAtLeastOneDirectory = False
 		for ExtendedPath, dirs, files in os.walk("."):
-			self.DoPeriodicMessage()
+			self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
 
 			if ExtendedPath and not len(files) and not len(dirs) and ExtendedPath != ".":
 				self.ObjmultusdTools.logger.debug("We found empty directory: " + ExtendedPath + " we are going to delete")
@@ -273,36 +280,9 @@ class multusDeleteDuplicatesOperateClass(object):
 		return DeletedAtLeastOneDirectory
 
 ############################################################
-	def DoPeriodicMessage(self):
-		if self.periodic:
-			Timestamp = time.time()
-			if Timestamp >= self.TimestampNextmultusdPing:
-				self.periodic.SendPeriodicMessage()
-				self.TimestampNextmultusdPing = time.time() + self.multusdPingInterval
-				
-			if self.periodic.WeAreOnError:
-				self.ObjmultusdTools.logger.debug("Error connecting to multusd... we stop running")
-				self.KeepThreadRunning = False
-		return 
-
-############################################################
-	def Operate(self, multusdPingInterval, bPeriodicEnable, ModuleControlPort):
-		self.multusdPingInterval = multusdPingInterval
-		## setup the periodic alive mnessage stuff
-		self.periodic = None
-		if bPeriodicEnable:
-			print ("Setup the periodic Alive messages")
-			self.TimestampNextmultusdPing = time.time()
-			self.periodic = multusdControlSocketClient.ClassControlSocketClient(self.ObjmultusdTools, 'localhost', ModuleControlPort)
-			if not self.periodic.ConnectFeedbackSocket():
-				self.ObjmultusdTools.logger.debug("Stopping Process, cannot establish Feedback Connection to multusd")
-				sys.exit(1)
-
-		# 2020-01-01
-		# the loop shall not sleep longer than 1 second.. otherwise the handling in the stop procedure gets too slow
-		SleepingTime = self.multusdPingInterval
-		if self.multusdPingInterval > 1.0:
-			SleepingTime = 1.0
+	def Operate(self, bPeriodicmultusdSocketPingEnable):
+		self.bPeriodicmultusdSocketPingEnable = bPeriodicmultusdSocketPingEnable
+		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(self.bPeriodicmultusdSocketPingEnable)
 
 		## We get the Index of the path in the database"
 		NextPathCheck = time.time()
@@ -325,7 +305,7 @@ class multusDeleteDuplicatesOperateClass(object):
 		while self.KeepThreadRunning:
 			
 			Timestamp = time.time()
-			self.DoPeriodicMessage()
+			self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
 
 			# get the current path
 			SavedPath = os.getcwd()

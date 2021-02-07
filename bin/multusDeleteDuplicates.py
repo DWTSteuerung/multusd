@@ -79,8 +79,6 @@ class multusDeleteDuplicatesClass(object):
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
 		self.ProcessIsRunningTwice = True
-		self.ModuleControlPort = 43000
-		self.ModuleControlPortEnabled = True
 
 		#WalkThe list of modules to find our configuration files.. 
 		BasicIdent = "multusDeleteDuplicates"
@@ -103,12 +101,13 @@ class multusDeleteDuplicatesClass(object):
 					self.ObjmultusDeleteDuplicatesConfig = libmultusDeleteDuplicates.multusDeleteDuplicatesConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusDeleteDuplicatesConfig.Instance = Instance
 					self.ObjmultusDeleteDuplicatesConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjmultusDeleteDuplicatesConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusDeleteDuplicatesConfig.Ident = Ident
-				self.LPIDFile = Module.ModuleParameter.ModulePIDFile
-				self.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
-				self.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				self.ObjmultusDeleteDuplicatesConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
+				self.ObjmultusDeleteDuplicatesConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
+				self.ObjmultusDeleteDuplicatesConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge
+				self.ObjmultusDeleteDuplicatesConfig.ModuleControlFileEnabled = Module.ModuleParameter.ModuleControlFileEnabled 
 				break
 
 		self.LogFile = self.ObjmultusdConfig.LoggingDir +"/" + Module.ModuleParameter.ModuleIdentifier + ".log"
@@ -124,13 +123,13 @@ class multusDeleteDuplicatesClass(object):
 
 		## Do the PIDFIle
 		try:
-			print ("We Try to do the PIDFile: " + self.LPIDFile)
-			with(libpidfile.PIDFile(self.LPIDFile)):
-				print ("Writing PID File: " + self.LPIDFile)
+			print ("We Try to do the PIDFile: " + self.ObjmultusDeleteDuplicatesConfig.LPIDFile)
+			with(libpidfile.PIDFile(self.ObjmultusDeleteDuplicatesConfig.LPIDFile)):
+				print ("Writing PID File: " + self.ObjmultusDeleteDuplicatesConfig.LPIDFile)
 			self.ProcessIsRunningTwice = False
 		except:
 			ErrorString = self.ObjmultusdTools.FormatException()
-			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.LPIDFile)
+			self.ObjmultusdTools.logger.debug("Error: " + ErrorString + " PIDFile: " + self.ObjmultusDeleteDuplicatesConfig.LPIDFile)
 			sys.exit(1)
 
 		self.ObjmultusdTools.logger.debug("Started up.. initializing finished")
@@ -140,7 +139,7 @@ class multusDeleteDuplicatesClass(object):
 	def __del__(self):
 		try:
 			if not self.ProcessIsRunningTwice:
-				os.remove(self.LPIDFile)
+				os.remove(self.ObjmultusDeleteDuplicatesConfig.LPIDFile)
 		except:
 			ErrorString = self.ObjmultusdTools .FormatException()
 			self.ObjmultusdTools.logger.debug("Error: " + ErrorString)
@@ -161,12 +160,8 @@ class multusDeleteDuplicatesClass(object):
 
 	def haupt (self, bDaemon):
 
-		PercentageOff = 80.0 
-		multusdPingInterval = self.ModuleControlMaxAge - (self.ModuleControlMaxAge * PercentageOff/100.0)
-		print ("multus Ping Interval: " + str(multusdPingInterval))
-
 		self.ObjmultusDeleteDuplicatesOperate = libmultusDeleteDuplicates.multusDeleteDuplicatesOperateClass(self.ObjmultusDeleteDuplicatesConfig, self.ObjmultusdTools)
-		self.ObjmultusDeleteDuplicatesOperate.Operate(multusdPingInterval, bDaemon and self.ModuleControlPortEnabled, self.ModuleControlPort)
+		self.ObjmultusDeleteDuplicatesOperate.Operate(bDaemon and self.ObjmultusDeleteDuplicatesConfig.ModuleControlPortEnabled)
 
 		print ("Exiting multusDeleteDuplicates Main-Program")
 
