@@ -72,26 +72,29 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 		return
 
 	############################################################################################################
-	def __DoJobBeforeStarting__(self):
+	def __DoJobBeforeStarting__(self, Module):
+		Module.NextDataExpected = 0
 		if self.ObjFailSafeFunctions:
 			self.ObjFailSafeFunctions.SetIntoFailSafeState(self.ProcessIsRunning)
 		return
 	
 	############################################################################################################
-	def __DoJobBeforeReStarting__(self):
+	def __DoJobBeforeReStarting__(self, Module):
+		Module.NextDataExpected = 0
 		if self.ObjFailSafeFunctions:
 			self.ObjFailSafeFunctions.SetIntoFailSafeState(self.ProcessIsRunning)
 		return
 
 	############################################################################################################
-	def __DoJobAfterStopping__(self):
+	def __DoJobAfterStopping__(self, Module):
+		Module.NextDataExpected = 0
 		if self.ObjFailSafeFunctions:
 			self.ObjFailSafeFunctions.SetIntoFailSafeState(self.ProcessIsRunning)
 			self.ObjFailSafeFunctions.ExecuteAfterStop(self.ProcessIsRunning)
 		return
 
 	############################################################################################################
-	def __DoJobAfterStarting__(self):
+	def __DoJobAfterStarting__(self, Module):
 		if self.ObjFailSafeFunctions:
 			self.ObjFailSafeFunctions.ExecuteAfterStart(self.ProcessIsRunning)
 		return
@@ -112,7 +115,7 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 		while getattr(self.Module.Thread, "do_run", True) and not self.FatalError:
 
 			if not self.ProcessIsRunning and not bResetDone:
-				self.__DoJobBeforeStarting__()
+				self.__DoJobBeforeStarting__(self.Module)
 				bResetDone = True
 			elif self.ProcessIsRunning and bResetDone:
 				bResetDone = False
@@ -127,7 +130,7 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 			## Check on Reload file in UPdate Directory
 			if (os.path.isfile(ReloadFile)):
 				self.ReloadProcess = True
-				self.__DoJobBeforeReStarting__()
+				self.__DoJobBeforeReStarting__(self.Module)
 				os.remove(ReloadFile)
 
 			#print ("working on " + self.getName())

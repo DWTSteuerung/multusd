@@ -91,22 +91,26 @@ class ClassRunModules(object):
 		return
 
 	############################################################################################################
-	def __DoJobBeforeReStarting__(self):
+	def __DoJobBeforeReStarting__(self, Module):
+		Module.NextDataExpected = 0
+
 		print ("multusdModuleHandling Called empty __DoJobBeforeReStarting__() function")
 		return
 
 	############################################################################################################
-	def __DoJobBeforeStarting__(self):
+	def __DoJobBeforeStarting__(self, Module):
+		Module.NextDataExpected = 0
 		print ("multusdModuleHandling Called empty __DoJobBeforeStarting__() function")
 		return
 
 	############################################################################################################
-	def __DoJobAfterStarting__(self):
+	def __DoJobAfterStarting__(self, Module):
 		print ("multusdModuleHandling Called empty __DoJobAfterStarting__() function")
 		return
 
 	############################################################################################################
-	def __DoJobAfterStopping__(self):
+	def __DoJobAfterStopping__(self, Module):
+		Module.NextDataExpected = 0
 		print ("multusdModuleHandling Called empty __DoJobAfterStopping__() function")
 		return
 
@@ -183,7 +187,7 @@ class ClassRunModules(object):
 
 			if not self.ProcessIsRunning:
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 1 Run a process start procedure for Binary: " + Module.ModuleParameter.ModuleBinary)
-				self.__DoJobBeforeStarting__()
+				self.__DoJobBeforeStarting__(Module)
 				self.StartSingleProcess(Module.ModuleParameter)
 				Module.ProcessLastTimeStarted = time.time()
 				## We set this after the start.. because the start itself can take a very long time.. sometimes
@@ -202,7 +206,7 @@ class ClassRunModules(object):
 			if self.ProcessIsRunning:
 
 				self.ObjmultusdTools.logger.debug("Binary " + Module.ModuleParameter.ModuleBinary + " is running now!")
-				self.__DoJobAfterStarting__()
+				self.__DoJobAfterStarting__(Module)
 			else:
 				## The process or whatever has to be killed...
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 2 Run a process start procedure Binary: " + Module.ModuleParameter.ModuleBinary + " Failed.. process seems not to be running.. we kill it again")
@@ -210,7 +214,6 @@ class ClassRunModules(object):
 
 				## We get a new startup time anyway.. can be an software error,, so 
 				Module.DetermineNextStartupTime(self.ThreadName)
-				Module.NextDataExpected = 0
 				
 		## 2021-01-24
 		## the select in the contol thread may hang, if a child process is in a weird kill 9 condition.. so we setup
@@ -238,7 +241,7 @@ class ClassRunModules(object):
 			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 2 Run a process stop procedure")
 			
 			self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
-			self.__DoJobAfterStopping__()
+			self.__DoJobAfterStopping__(Module)
 
 			self.StopProcess = False
 
@@ -250,9 +253,9 @@ class ClassRunModules(object):
 		elif (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and self.ReloadProcess and self.StartProcess:
 			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 5 Run a process restart procedure " + Module.ModuleParameter.ModuleBinary)
 
-			self.__DoJobBeforeReStarting__()
+			self.__DoJobBeforeReStarting__(Module)
 			self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
-			self.__DoJobAfterStopping__()
+			self.__DoJobAfterStopping__(Module)
 
 			self.StartSingleProcess(Module.ModuleParameter)
 			Module.ProcessLastTimeStarted = time.time()
@@ -269,15 +272,13 @@ class ClassRunModules(object):
 			if self.ProcessIsRunning:
 				self.ObjmultusdTools.logger.debug("Binary " + Module.ModuleParameter.ModuleBinary + " is finally running now !!!!!!")
 				self.ReloadProcess = False
-				self.__DoJobAfterStarting__()
+				self.__DoJobAfterStarting__(Module)
 			else:
 				## The process or whatever has to be killed...
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 5 Run a process restart Failed.. we kill process again " + Module.ModuleParameter.ModuleBinary)
 				self.ProcessIsRunning = self.StopSingleProcess(Module.ModuleParameter, self.ProcessIsRunning)
 				if not Module.ModuleParameter.ModuleControlPortEnabled:
 					Module.DetermineNextStartupTime(self.ThreadName)
-
-				Module.NextDataExpected = 0
 
 		# Periodic Check by script, if there is one
 		elif (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and Module.ModuleParameter.ModulePeriodicCheckEnabled and (self.NextCheckToDo < time.time()):
@@ -315,8 +316,6 @@ class ClassRunModules(object):
 				if not Module.ModuleParameter.ModuleControlPortEnabled:
 					Module.DetermineNextStartupTime(self.ThreadName)
 
-				Module.NextDataExpected = 0
-
 			## Next check on PID file
 			self.NextPIDStatusToDo = time.time() + Module.ModuleParameter.ModuleStatusByPIDFilePeriod
 
@@ -345,8 +344,6 @@ class ClassRunModules(object):
 					if not Module.ModuleParameter.ModuleControlPortEnabled:
 						Module.DetermineNextStartupTime(self.ThreadName)
 
-					Module.NextDataExpected = 0
-				
 					time.sleep (1.0)
 
 		return

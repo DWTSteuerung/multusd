@@ -274,7 +274,6 @@ class ClassControlPortThread(threading.Thread):
 					## End while select loop
 
 				if self.bTimeout:
-					self.Module.NextDataExpected = 0
 					self.TimestampNextSelectReturnExpected = 0.0
 					if not self.Module.Thread.Shutdown and not self.Module.Thread.ReloadProcess:
 						self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " We got a timout.. we execute the FailSafe functions and Stopp the corresponding Process immediatly")
@@ -292,6 +291,9 @@ class ClassControlPortThread(threading.Thread):
 					pass
 				## cleanup the socks array
 				self.__CleanupSocksList__()
+
+				## prepare for next session
+				self.Module.NextDataExpected = 0
 
 			else:
 				# waiting for process to come up an connect
