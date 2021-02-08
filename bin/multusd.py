@@ -25,6 +25,7 @@ import shutil
 import time
 import signal
 import stat
+import pathlib
 
 sys.path.append('/multus/lib')
 import libpidfile
@@ -74,7 +75,6 @@ class ClassOperateModules(object):
 	
 		os.mkdir(self.UpdateDirectory)
 		os.chmod(self.UpdateDirectory,stat.S_IRWXU |stat.S_IRWXG | stat.S_IRWXO)
-
 
 		self.multusdServicesThreads = list()
 		
@@ -246,6 +246,8 @@ class ClassOperateModules(object):
 		
 		Action = None
 
+		AgeReloadFileHasToHave = 60.0
+
 		## Reboot.0
 		## Reboot.300
 		## Reload.Modules -- whcih means to stop all modules and reload everything
@@ -254,9 +256,14 @@ class ClassOperateModules(object):
 		Reboot300 = self.UpdateDirectory + "/Reboot.300"
 
 		if (os.path.isfile(ReloadFile)):
-			Action = "Reload.Modules"
-			self.ObjmultusdTools.logger.debug("Reload of all modules requested")
-			os.remove(ReloadFile)
+			## 2021-02-08
+			## the Reload file has to exist and it schould be older than a given time... then we do a relaod
+			ObjReloadFile = pathlib.Path(ReloadFile)
+			TimeFileLatestModified = ObjReloadFile.stat().st_mtime	
+			if TimeFileLatestModified < (time.time() - AgeReloadFileHasToHave):
+				Action = "Reload.Modules"
+				self.ObjmultusdTools.logger.debug("Reload of all modules requested")
+				os.remove(ReloadFile)
 
 		if (os.path.isfile(Reboot0)):
 			Action = "Reboot.0"

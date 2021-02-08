@@ -19,7 +19,7 @@ class ClassBasicInfos
 	{
 		## wir lesen die Config direkt mal ein
 		$this->ini = parse_ini_file(self::$CONFIG_FILE, True);
-		$this->SiteIdentifier = "DWT multusd";
+		$this->SiteIdentifier = "Deutsche Windtechnik multus&reg;";
 		##$this->SiteIdentifier = $this->ini['DEFAULT']['Site'];
 		$this->multusUsersConfigFile = $this->ini['BasicClasses']['multusUsersConfigFile'];
 		$this->multusUsersClass = $this->ini['BasicClasses']['multusUsersClass'];
