@@ -40,12 +40,6 @@ ln -s /multus/bin/multusOVPNClient_0.py /multus/bin/multusOVPNClient_1.py
 # generate the corresponding configuration
 cp /multus/share/configs/multusd_d/multusOVPNClient_0.conf /multus/etc/multusd_d/multusOVPNClient_1.conf
 
-#
-sudo crontab -e
-# add line:
-# 
-*/10    *   *   *   *   /multus/bin/setrights.sh 
-
 ##############
 ## we are done
 # Setup multusd over http

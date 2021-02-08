@@ -9,7 +9,7 @@ import logging
 import logging.handlers
 #import MySQLdb
 # 2019-09-03
-from logging import Logger
+#from logging import Logger
 
 import pymysql
 import sys
@@ -17,6 +17,8 @@ import linecache
 import time
 import random
 import hashlib
+import os
+import stat
 
 class DWTThriftToolsClass(object):
 
@@ -87,6 +89,17 @@ class DWTThriftToolsClass(object):
 	### fuer das globale logging nutzen wir einen logger handler in der tools Klasse
 	def InitGlobalLogging(self, LogFile):
 		self.logger = self.InitLogging(LogFile)
+
+		# 2021-02-08
+		# set the file permissions right
+		bLogFileExists = os.path.exists(LogFile)
+		print ("InitGlobalLogging: LogFIle: " + LogFile + " os.exists: " + str(bLogFileExists))
+
+		if not bLogFileExists:
+			self.logger.debug("DWTThriftToolsClass:InitGlobalLogging: Logging initialized")
+	
+		os.chmod(LogFile, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
+
 		return
 
 	## 2019-05-09
