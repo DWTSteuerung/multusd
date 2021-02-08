@@ -73,7 +73,8 @@ class DWTThriftToolsClass(object):
 		lhandler = logging.handlers.WatchedFileHandler(LogFile)
 		logger = logging.getLogger(__name__)
 		## Normal loggin to StdOut
-		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+		logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)-8s %(message)s')
+		#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 		formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
 		lhandler.setFormatter(formatter)
 		lhandler.setLevel(logging.DEBUG)
