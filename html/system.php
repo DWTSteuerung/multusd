@@ -113,8 +113,6 @@ if (isset($_POST['apply']))
 				$bIniNeedsToBeWritten = True;
 			}
 
-
-
 			// 2019-12-30
 			// Check on number of instances
 			if (($Module->RunOnce == False) && isset($_POST['RunInstances'][$Key])) 
@@ -253,16 +251,10 @@ echo "<table cellspacing='1' cellpadding='3' border=0 bgcolor='#000000'>";
 						echo "</td>";
 						echo "<td>";
 							if ($Module->ModuleBinaryStartupDirectlyEnable)
-								if ($Module->Enabled)
-									if ($Module->ModuleStatusByPIDFileEnable )
-										echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True' checked = 'checked'> Enabled </label>";
-									else
-										echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True'> Enabled </label>";
+								if ($Module->ModuleStatusByPIDFileEnable )
+									echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True' checked = 'checked'> Enabled </label>";
 								else
-									if ($Module->ModuleStatusByPIDFileEnable )
-										echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True' checked = 'checked' disabled> Enabled </label>";
-									else
-										echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True' disabled> Enabled </label>";
+									echo "<label> <input type='checkbox' name='ModuleStatusByPIDFileEnable[$Key]' value='True'> Enabled </label>";
 
 						echo "</td>";
 
@@ -278,17 +270,11 @@ echo "<table cellspacing='1' cellpadding='3' border=0 bgcolor='#000000'>";
 						echo "</td>";
 						echo "<td>";
 							if ($Module->ModuleBinaryStartupDirectlyEnable)
-								if ($Module->Enabled)
-									if ($Module->ModuleControlPortEnabled)
-										echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True' checked = 'checked'> Enabled </label>";
-									else
-										echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True'> Enabled </label>";
+								if ($Module->ModuleControlPortEnabled)
+									echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True' checked = 'checked'> Enabled </label>";
 								else
-									if ($Module->ModuleControlPortEnabled)
-										echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True' checked = 'checked' disabled> Enabled </label>";
-									else
-										echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True' disabled> Enabled </label>";
-									
+									echo "<label> <input type='checkbox' name='ModuleControlPortEnabled[$Key]' value='True'> Enabled </label>";
+																	
 						echo "</td>";
 						echo "<td>";
 							if ($Module->ModuleBinaryStartupDirectlyEnable)
@@ -300,17 +286,11 @@ echo "<table cellspacing='1' cellpadding='3' border=0 bgcolor='#000000'>";
 						echo "</td>";
 						echo "<td>";
 							if ($Module->ModuleBinaryStartupDirectlyEnable)
-								if ($Module->Enabled)
-									if ($Module->ModuleControlFileEnabled) 
-										echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True' checked = 'checked'> Enabled </label>";
-									else
-										echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True'> Enabled </label>";
+								if ($Module->ModuleControlFileEnabled) 
+									echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True' checked = 'checked'> Enabled </label>";
 								else
-									if ($Module->ModuleControlFileEnabled)
-										echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True' checked = 'checked' disabled> Enabled </label>";
-									else
-										echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True' disabled> Enabled </label>";
-
+									echo "<label> <input type='checkbox' name='ModuleControlFileEnabled[$Key]' value='True'> Enabled </label>";
+								
 							echo "</td>";
 
 						echo "<td>";

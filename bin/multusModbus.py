@@ -35,10 +35,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # 2020-06-01
 # Json config option
-if libmultusModbus.UseJsonConfig:
-	import libmultusdJson
-	import libmultusdJsonModuleConfig
-
+import libmultusdJson
+import libmultusdJsonModuleConfig
 import libmultusdClientBasisStuff
 
 class multusModbusClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
@@ -143,22 +141,24 @@ class multusModbusClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass)
 		
 		if signum == 15 or signum == 2:
 			## We have to stop the Thread
-			self.ModbusThread.KeepThreadRunning = False
 			self.ObjmultusdTools.logger.debug("Now Shutting down Modbus TCP Server")
-			# TODO 
-			# if there is an ongoing TCP connection to the server.. we have to force the shutdown somehow
-			self.ModbusThread.ObjumodbusServer._shutdown_request = True
-			self.ModbusThread.ObjumodbusServer.shutdown()
-			self.ObjmultusdTools.logger.debug("Now Closing Modbus TCP Server")
-			self.ModbusThread.ObjumodbusServer.server_close()
-			self.ModbusThread.join()
-			self.ObjmultusdTools.logger.debug("Stopped Modbus Listening Thread")
 
-			count = 0
-			while self.ModbusThread.is_alive() and count < 10:
-				print ("Waiting thread to terminate")
-				time.sleep (1)
-				count = count + 1
+			if self.ModbusThread:
+				self.ModbusThread.KeepThreadRunning = False
+				# TODO 
+				# if there is an ongoing TCP connection to the server.. we have to force the shutdown somehow
+				self.ModbusThread.ObjumodbusServer._shutdown_request = True
+				self.ModbusThread.ObjumodbusServer.shutdown()
+				self.ObjmultusdTools.logger.debug("Now Closing Modbus TCP Server")
+				self.ModbusThread.ObjumodbusServer.server_close()
+				self.ModbusThread.join()
+				self.ObjmultusdTools.logger.debug("Stopped Modbus Listening Thread")
+
+				count = 0
+				while self.ModbusThread.is_alive() and count < 10:
+					print ("Waiting thread to terminate")
+					time.sleep (1)
+					count = count + 1
 			
 			sys.exit(0)
 
@@ -168,10 +168,7 @@ class multusModbusClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass)
 	###
 	def haupt (self, bDeamonized):
 		## setup the periodic alive mnessage stuff
-		bPeriodicmultusdSocketPingEnable = bDeamonized and self.ModuleControlPortEnabled:
-		## setup the periodic control stuff..
-		## if this does not succeed .. we do not have to continue
-		SleepingTime, self.ModbusThread.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
+		bPeriodicmultusdSocketPingEnable = bDeamonized and self.ObjModbusConfig.ModuleControlPortEnabled
 
 		nRestart = 0
 		MaxRestarts = 10
@@ -179,7 +176,9 @@ class multusModbusClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass)
 		self.ModbusThread = libmultusModbus.multusModbusHandlerThread(self.ObjModbusConfig, self.ObjmultusdTools, self.ObjmultusHardware)
 		self.ModbusThread.StartmultusModbusServer()
 
-		self.ModbusThread.KeepThreadRunning = True
+		## setup the periodic control stuff..
+		## if this does not succeed .. we do not have to continue
+		SleepingTime, self.ModbusThread.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
 		## it the ModBus Process fails too often, we quit... the multusd will restart us again
 		while (self.ModbusThread.KeepThreadRunning and nRestart < MaxRestarts):

@@ -37,9 +37,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # 2020-06-01
 # Json config option
-if libmultusLANWANCheck.UseJsonConfig:
-	import libmultusdJson
-	import libmultusdJsonModuleConfig
+import libmultusdJson
+import libmultusdJsonModuleConfig
 
 class multusLANWANCheckClass(object):
 	def __init__(self):
@@ -88,7 +87,7 @@ class multusLANWANCheckClass(object):
 				else:
 					self.ObjmultusLANWANCheckConfig = libmultusLANWANCheck.multusLANWANCheckConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusLANWANCheckConfig.ReadConfig()
-					self.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
+					self.ObjmultusLANWANCheckConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusLANWANCheckConfig.Ident = Ident
 				self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled = DSVIntegrityEnabled 
