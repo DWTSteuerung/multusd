@@ -38,7 +38,7 @@ import multusdTools
 import multusdModuleConfig
 import NetworkStatus
 
-import libStatusLED
+import libmultusStatusLED
 
 ## do the Periodic Alive Stuff
 import multusdControlSocketClient
@@ -57,7 +57,7 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 		self.ObjmultusdTools = multusdTools.multusdToolsClass()
 
 		## 2020-06-01
-		if libStatusLED.UseJsonConfig:
+		if libmultusStatusLED.UseJsonConfig:
 			# first we get the config of the multusd system
 			self.ObjmultusdConfig = libmultusdJson.multusdJsonConfigClass(ObjmultusdTools = self.ObjmultusdTools)
 			bSuccess = self.ObjmultusdConfig.ReadConfig()
@@ -80,14 +80,14 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 		Ident = "StatusLED"
 		for Module in ObjmultusdModulesConfig.AllModules:
 			if Module.ModuleParameter.ModuleIdentifier == Ident:
-				if libStatusLED.UseJsonConfig:
-					self.ObjStatusLEDConfig = libStatusLED.StatusLEDConfigClass(None)
+				if libmultusStatusLED.UseJsonConfig:
+					self.ObjStatusLEDConfig = libmultusStatusLED.StatusLEDConfigClass(None)
 					bSuccess = self.ObjStatusLEDConfig.ReadJsonConfig(self.ObjmultusdTools, self.ObjmultusdConfig, Ident)
 					if not bSuccess:
 						print ("Error getting Json config, we exit")
 						sys.exit(2)
 				else:
-					self.ObjmultusStatusLEDConfig = libStatusLED.StatusLEDConfigClass(Module.ModuleParameter.ModuleConfig)
+					self.ObjmultusStatusLEDConfig = libmultusStatusLED.StatusLEDConfigClass(Module.ModuleParameter.ModuleConfig)
 					self.ObjmultusStatusLEDConfig.ReadConfig()
 					self.ObjmultusStatusLEDConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
@@ -122,7 +122,7 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			sys.exit(1)
 
 		## get the hardware access
-		self.ObjStatusLEDFunctions = libStatusLED.StatusLEDFunctionsClass(self.ObjmultusStatusLEDConfig, self.ObjmultusdTools)
+		self.ObjStatusLEDFunctions = libmultusStatusLED.StatusLEDFunctionsClass(self.ObjmultusStatusLEDConfig, self.ObjmultusdTools)
 		self.ObjLANWANStatus = NetworkStatus.gRPCLANWANStatusClass(self.ObjmultusdTools)
 		self.ObjOVPNStatus = NetworkStatus.gRPCOVPNStatusClass(self.ObjmultusdTools)
 
