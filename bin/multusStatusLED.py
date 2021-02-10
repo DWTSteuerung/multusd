@@ -45,8 +45,11 @@ import multusdControlSocketClient
 
 # 2020-06-01
 # Json config option
-import libmultusdJson
-import libmultusdJsonModuleConfig
+if libmultusStatusLED.UseJsonConfig:
+	import libmultusdJson
+	import libmultusdJsonModuleConfig
+
+
 import libmultusdClientBasisStuff
 
 class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):

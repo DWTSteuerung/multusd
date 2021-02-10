@@ -35,8 +35,10 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # 2020-06-01
 # Json config option
-import libmultusdJson
-import libmultusdJsonModuleConfig
+if libmultusModbus.UseJsonConfig:
+	import libmultusdJson
+	import libmultusdJsonModuleConfig
+
 import libmultusdClientBasisStuff
 
 class multusModbusClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):

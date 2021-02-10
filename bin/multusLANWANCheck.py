@@ -37,8 +37,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # 2020-06-01
 # Json config option
-import libmultusdJson
-import libmultusdJsonModuleConfig
+if libmultusLANWANCheck.UseJsonConfig:
+	import libmultusdJson
+	import libmultusdJsonModuleConfig
 
 class multusLANWANCheckClass(object):
 	def __init__(self):

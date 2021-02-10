@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 import importlib
+import pathlib
 
 sys.path.append('/multus/lib')
 import multusdModuleHandling
@@ -108,6 +109,11 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 		"""
 
 		ReloadFile = self.UpdateDirectory + "/Reload"
+
+		## We wait 60 seconds after the last config-CHnage 
+		## till we restart the process, which
+		## gives us some time to check the configuration
+		AgeReloadFileHasToHave = 60.0
 		
 		## Reset will be done before normal startup
 		bResetDone = True
@@ -129,9 +135,14 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 	
 			## Check on Reload file in UPdate Directory
 			if (os.path.isfile(ReloadFile)):
-				self.ReloadProcess = True
-				self.__DoJobBeforeReStarting__(self.Module)
-				os.remove(ReloadFile)
+				## 2021-02-08
+				## the Reload file has to exist and it should be older than a given time... then we do a relaod
+				ObjReloadFile = pathlib.Path(ReloadFile)
+				TimeFileLatestModified = ObjReloadFile.stat().st_mtime	
+				if TimeFileLatestModified < (time.time() - AgeReloadFileHasToHave):
+					self.ReloadProcess = True
+					self.__DoJobBeforeReStarting__(self.Module)
+					os.remove(ReloadFile)
 
 			#print ("working on " + self.getName())
 			time.sleep(self.SleepingTime)
