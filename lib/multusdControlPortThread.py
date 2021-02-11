@@ -297,6 +297,8 @@ class ClassControlPortThread(threading.Thread):
 
 			else:
 				# waiting for process to come up an connect
+				self.Module.NextDataExpected = 0
+				self.TimestampNextSelectReturnExpected = 0.0
 				time.sleep(0.5)
 				
 		print("ControlThread: Stopping " + self.getName() + " thread.")
