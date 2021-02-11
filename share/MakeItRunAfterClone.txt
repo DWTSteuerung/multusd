@@ -38,7 +38,12 @@ mv PimpMyLog logs
 # some upcounting symbolic links
 ln -s /multus/bin/multusOVPNClient_0.py /multus/bin/multusOVPNClient_1.py
 # generate the corresponding configuration
-cp /multus/share/configs/multusd_d/multusOVPNClient_0.conf /multus/etc/multusd_d/multusOVPNClient_1.conf
+cp /multus/etc/multusd_d/multusOVPNClient_0.conf /multus/etc/multusd_d/multusOVPNClient_1.conf
+
+## similar with multusReadDIDO
+## link as much as you like
+ln -s /multus/bin/multusReadDIDO_0.py /multus/bin/multusReadDIDO_1.py 
+## take care on the needed config files.. pay attention to the gRPC Port
 
 ##############
 ## we are done

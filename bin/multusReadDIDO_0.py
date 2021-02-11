@@ -38,6 +38,21 @@ if libmultusReadDIDO.UseJsonConfig:
 class multusReadDIDOClass(object):
 
 	def __init__(self):
+		RunOnce = True
+
+		ScriptName = os.path.basename(__file__)
+		print ("Filename: " + ScriptName)
+		## 2019-12-30
+		## We try to get the Instance .. if there is one
+		FirstPart = ScriptName.split('.')
+		StrInstance = FirstPart[0].split('_')
+		print ("StrInstance: " + str(StrInstance))
+
+		Instance = 0
+		if len(StrInstance) > 1 and StrInstance[1].isnumeric():
+			RunOnce = False
+			Instance = int(StrInstance[1])
+
 		self.ObjmultusdTools = multusdTools.multusdToolsClass()
 
 		## 2020-06-01
@@ -63,7 +78,11 @@ class multusReadDIDOClass(object):
 		self.ProcessIsRunningTwice = True
 
 		#WalkThe list of modules to find our configuration files.. 
-		Ident = "multusReadDIDO"
+		BasicIdent = "multusReadDIDO" 
+		Ident = BasicIdent
+		if not RunOnce:
+			Ident = Ident + "_" + StrInstance[1]
+
 		for Module in ObjmultusdModulesConfig.AllModules:
 			if Module.ModuleParameter.ModuleIdentifier == Ident:
 				if libmultusReadDIDO.UseJsonConfig:

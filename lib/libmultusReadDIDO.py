@@ -73,6 +73,8 @@ class multusReadDIDOConfigClass(DWTThriftConfig3.ConfigDataClass):
 			self.Port = Port
 			self.ObjgRPCmultusReadDIDOStatus = None
 
+	#####################################################################
+	#####################################################################
 	def __init__(self, ConfigFile):
 		## initialize the parent class
 		DWTThriftConfig3.ConfigDataClass.__init__(self)
@@ -90,6 +92,8 @@ class multusReadDIDOConfigClass(DWTThriftConfig3.ConfigDataClass):
 	
 		return
 
+	#####################################################################
+	#####################################################################
 	def ReadConfig(self):
 		# config fuer die zu nutzenden Dateien
 		ConfVorhanden = os.path.isfile(self.ConfigFile)
@@ -102,11 +106,19 @@ class multusReadDIDOConfigClass(DWTThriftConfig3.ConfigDataClass):
 			self.ReadInDIEnable = self.__assignBool__(config.get('ReadInDIEnable', 'Value'))
 
 			self.ReadLastDOInsteadOfDI = self.__assignBool__(config.get('ReadLastDOInsteadOfDI', 'Value'))
-			String = self.__assignStr__(config.get('RelevantDO', 'Value'))
-			RelevantDO = String.split(',')
-			self.RelevantDO = list()
-			for DO in RelevantDO:
-				self.RelevantDO.append(int(DO.strip()))
+			RelevantDIDO = self.__assignStr__(config.get('RelevantDIDO', 'Value')).split(',')
+			self.RelevantDIDO = list()
+			for DIDO in RelevantDIDO:
+				self.RelevantDIDO.append(int(DIDO.strip()))
+
+			## 2021-02-11
+			## added mapping and inverting
+			MapOnRemoteDO  = self.__assignStr__(config.get('MapOnRemoteDO', 'Value')).split(',')
+			self.MapOnRemoteDO = list()
+			for DO in MapOnRemoteDO:
+				self.MapOnRemoteDO.append(int(DO.strip()))
+
+			self.TransferInvertedEnable = self.__assignBool__(config.get('TransferInvertedEnable', 'Value'))
 
 			self.TransferInterval = self.__assignInt__(config.get('TransferInterval', 'Value'))
 			String = self.__assignStr__(config.get('DOHosts', 'Value'))
@@ -139,6 +151,8 @@ class multusReadDIDOConfigClass(DWTThriftConfig3.ConfigDataClass):
 		return True
 
 	# 2020-06-01	
+	#####################################################################
+	#####################################################################
 	def ReadJsonConfig(self, ObjmultusdTools, ObjmultusdJsonConfig, Ident, Instance = 0):
 		self.Instance = Instance
 		bSuccess = False
@@ -172,6 +186,8 @@ class multusReadDIDOConfigClass(DWTThriftConfig3.ConfigDataClass):
 
 ############################################################################################################
 class ClassmultusReadDIDOHandling(object):
+	#####################################################################
+	#####################################################################
 	def __init__(self, ObjmultusReadDIDOConfig, ObjmultusdTools, ObjmultusHardware):
 
 		self.ObjmultusdTools = ObjmultusdTools
@@ -179,7 +195,7 @@ class ClassmultusReadDIDOHandling(object):
 		self.ObjmultusHardware = ObjmultusHardware
 
 		self.DIStatus = None
-		self.DIStatusOld = None
+		self.DIStatusOld = list()
 
 		## setup the DOHosts
 		for DOHost in self.ObjmultusReadDIDOConfig.DOHosts:
@@ -192,42 +208,73 @@ class ClassmultusReadDIDOHandling(object):
 		self.DOSet = self.ObjmultusHardware.InitDOSet()
 		pass
 
-	def TransferStatusToRemote(self, DIStatus):
+	#####################################################################
+	#####################################################################
+	def TransferStatusToRemote(self, DIStatus, bForceTransfer = True):
 
+		##
+		## subFunction
+		##
+		def AssignValues(nElement, TransFerStatus):	
+			if self.ObjmultusReadDIDOConfig.MapOnRemoteDO[nElement] == 1:
+				self.gRPCRM.DI01 = TransFerStatus
+
+			elif self.ObjmultusReadDIDOConfig.MapOnRemoteDO[nElement] == 2:
+				self.gRPCRM.DI02 = TransFerStatus
+
+			elif self.ObjmultusReadDIDOConfig.MapOnRemoteDO[nElement] == 3:
+				self.gRPCRM.DI03 = TransFerStatus
+
+			elif self.ObjmultusReadDIDOConfig.MapOnRemoteDO[nElement] == 4:
+				self.gRPCRM.DI04 = TransFerStatus
+
+			elif self.ObjmultusReadDIDOConfig.MapOnRemoteDO[nElement] == 5:
+				self.gRPCRM.DI05 = TransFerStatus
+
+			elif self.ObjmultusReadDIDOConfig.MapOnRemoteDO[nElement] == 6:
+				self.gRPCRM.DI06 = TransFerStatus
+
+			elif self.ObjmultusReadDIDOConfig.MapOnRemoteDO[nElement] == 7:
+				self.gRPCRM.DI07 = TransFerStatus
+
+			elif self.ObjmultusReadDIDOConfig.MapOnRemoteDO[nElement] == 8:
+				self.gRPCRM.DI08 = TransFerStatus
+
+		#######################
+		#Main Function
+		#
+		#
 		# prepare RequestMessage
-		for RDO in self.ObjmultusReadDIDOConfig.RelevantDO:
-			if RDO == 1:
-				self.gRPCRM.DI01 = DIStatus[RDO - 1]
+		i = 0
+		for RDO in self.ObjmultusReadDIDOConfig.RelevantDIDO:
 
-			elif RDO == 2:
-				self.gRPCRM.DI02 = DIStatus[RDO - 1]
+			if self.ObjmultusReadDIDOConfig.TransferInvertedEnable:
+				TransferStatus = -1
 
-			elif RDO == 3:
-				self.gRPCRM.DI03 = DIStatus[RDO - 1]
+				if DIStatus[RDO - 1] == 0:
+					TransferStatus = 1
+				elif DIStatus[RDO - 1] == 1:
+					TransferStatus = 0
+			else:
+				TransferStatus = DIStatus[RDO - 1]
 
-			elif RDO == 4:
-				self.gRPCRM.DI04 = DIStatus[RDO - 1]
+			AssignValues(i, TransferStatus)
 
-			elif RDO == 5:
-				self.gRPCRM.DI05 = DIStatus[RDO - 1]
-
-			elif RDO == 6:
-				self.gRPCRM.DI06 = DIStatus[RDO - 1]
-
-			elif RDO == 7:
-				self.gRPCRM.DI07 = DIStatus[RDO - 1]
-
-			elif RDO == 8:
-				self.gRPCRM.DI08 = self.DIStatus[RDO - 1]
+			i += 1
 
 
 		for DOHost in self.ObjmultusReadDIDOConfig.DOHosts:
-			self.ObjmultusdTools.logger.debug ("Distribute gRPC update -- " + str(self.gRPCRM.DI01) + ", " + str(self.gRPCRM.DI02) + ", " + str(self.gRPCRM.DI03) + ", " + str(self.gRPCRM.DI04) + ", " + str(self.gRPCRM.DI05) + ", " + str(self.gRPCRM.DI06) + ", " + str(self.gRPCRM.DI07) + ", " + str(self.gRPCRM.DI08) + " -- to Host: " + str(DOHost.Hostname))
-
+			
 			DOHost.ObjgRPCmultusReadDIDOStatus.SetDigitalOutputs(self.gRPCRM)
+
+			if bForceTransfer:
+				self.ObjmultusdTools.logger.debug ("Distribute gRPC update -- " + str(self.gRPCRM.DI01) + ", " + str(self.gRPCRM.DI02) + ", " + str(self.gRPCRM.DI03) + ", " + str(self.gRPCRM.DI04) + ", " + str(self.gRPCRM.DI05) + ", " + str(self.gRPCRM.DI06) + ", " + str(self.gRPCRM.DI07) + ", " + str(self.gRPCRM.DI08) + " -- to Host: " + str(DOHost.Hostname))
+
 
 		return
 
+	#####################################################################
+	#####################################################################
 	def __del__(self):
 		pass
 
@@ -235,6 +282,8 @@ class ClassmultusReadDIDOHandling(object):
 ############################################################################################################
 class gRPCmultusReadDIDOServicerClass(multusReadDIDO_pb2_grpc.gRPCmultusReadDIDOServicer):
 
+	#####################################################################
+	#####################################################################
 	def __init__(self, ObjmultusReadDIDOHandling):
 
 		self.ObjmultusReadDIDOHandling = ObjmultusReadDIDOHandling
@@ -243,6 +292,8 @@ class gRPCmultusReadDIDOServicerClass(multusReadDIDO_pb2_grpc.gRPCmultusReadDIDO
 
 		return
 
+	#####################################################################
+	#####################################################################
 	def gRPCGetmultusReadDIDOStatus(self, request, contect):
 		result= {'ProcessOK': self.ObjmultusReadDIDOHandling.ProcessHealthStatus}
 		return multusReadDIDO_pb2.ProcessStatusMessagemultusReadDIDO(**result)
@@ -274,6 +325,8 @@ class gRPCmultusReadDIDOServicerClass(multusReadDIDO_pb2_grpc.gRPCmultusReadDIDO
 ############################################################################################################
 
 class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
+	#####################################################################
+	#####################################################################
 	def __init__(self, ObjmultusReadDIDOConfig, ObjmultusdTools):
 		# init parent class
 		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, ObjmultusReadDIDOConfig, ObjmultusdTools)
@@ -281,8 +334,15 @@ class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisSt
 		self.ObjmultusReadDIDOConfig = ObjmultusReadDIDOConfig
 
 		self.ObjmultusHardware = multusHardwareHandler.multusHardwareHandlerClass(self.ObjmultusReadDIDOConfig, self.ObjmultusdTools)
+
+			
+		if self.ObjmultusReadDIDOConfig.ReadInDIEnable and self.ObjmultusReadDIDOConfig.ReadLastDOInsteadOfDI:
+			self.ObjmultusHardware.InitReadDOStatus()
+
 		return
 
+	#####################################################################
+	#####################################################################
 	def __del__(self):
 		print ("leaving multusReadDIDOOperateClass")
 		pass
@@ -304,6 +364,11 @@ class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisSt
 		self.ObjmultusReadDIDOHandling = ClassmultusReadDIDOHandling(self.ObjmultusReadDIDOConfig, self.ObjmultusdTools, self.ObjmultusHardware)
 		#self.ObjOperatemultusReadDIDOThread.start()
 
+
+		if self.ObjmultusReadDIDOConfig.ReadInDIEnable and self.ObjmultusReadDIDOConfig.ReadLastDOInsteadOfDI:
+			for Status in self.ObjmultusHardware.ReadDOStatus:
+				self.ObjmultusReadDIDOHandling.DIStatusOld.append(Status)
+
 		# setting up the gRPC Server
 		multusReadDIDO_pb2_grpc.add_gRPCmultusReadDIDOServicer_to_server(gRPCmultusReadDIDOServicerClass(self.ObjmultusReadDIDOHandling ), self.gRPCServer)
  
@@ -324,14 +389,30 @@ class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisSt
 			if self.ObjmultusReadDIDOConfig.ReadInDIEnable:
 				print ("We read in all Digital Inputs at once")
 				if self.ObjmultusReadDIDOConfig.ReadLastDOInsteadOfDI:
-					self.ObjmultusReadDIDOHandling.DIStatus = self.ObjmultusReadDIDOHandling.ObjmultusHardware.ReadStatusOfDos(0)
+					self.ObjmultusReadDIDOHandling.DIStatus = self.ObjmultusReadDIDOHandling.ObjmultusHardware.ReadStatusOfAllDos()
 				else:
 					self.ObjmultusReadDIDOHandling.DIStatus = self.ObjmultusReadDIDOHandling.ObjmultusHardware.readDI(0)
 
-				if self.ObjmultusReadDIDOHandling.DIStatusOld != self.ObjmultusReadDIDOHandling.DIStatus or NextPeriodicTransfer < Timestamp:
-					self.ObjmultusReadDIDOHandling.TransferStatusToRemote(self.ObjmultusReadDIDOHandling.DIStatus)
+				# check on force transfer
+				bForceTransfer = False
+				i = 0
+				for Status in self.ObjmultusReadDIDOHandling.DIStatus:
+					if (i + 1) in self.ObjmultusReadDIDOConfig.RelevantDIDO and Status != self.ObjmultusReadDIDOHandling.DIStatusOld[i]:
+						print ("We set bForceTransfer: --  i: " + str(i) + " --- OldStatus: " + str(self.ObjmultusReadDIDOHandling.DIStatusOld[i]) + " -- New Status: " + str(Status))
+						bForceTransfer = True
+
+					i += 1
+
+				## We do the transfer
+				if bForceTransfer or NextPeriodicTransfer < Timestamp:
+					print ("We do a transfer")
+					self.ObjmultusReadDIDOHandling.TransferStatusToRemote(self.ObjmultusReadDIDOHandling.DIStatus, bForceTransfer)
 					NextPeriodicTransfer = Timestamp + self.ObjmultusReadDIDOConfig.TransferInterval
-					self.ObjmultusReadDIDOHandling.DIStatusOld = self.ObjmultusReadDIDOHandling.DIStatus
+					## keep the old value in mind	
+					j = 0
+					for Status in self.ObjmultusReadDIDOHandling.DIStatus:
+						self.ObjmultusReadDIDOHandling.DIStatusOld[j] =	Status
+						j += 1
 
 			if self.KeepThreadRunning:
 				time.sleep (SleepingTime)

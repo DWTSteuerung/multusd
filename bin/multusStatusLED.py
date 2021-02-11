@@ -80,7 +80,7 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			ObjmultusdModulesConfig.ReadModulesConfig()
 
 		#WalkThe list of modules to find our configuration files.. 
-		Ident = "StatusLED"
+		Ident = "multusStatusLED"
 		for Module in ObjmultusdModulesConfig.AllModules:
 			if Module.ModuleParameter.ModuleIdentifier == Ident:
 				if libmultusStatusLED.UseJsonConfig:

@@ -11,13 +11,18 @@ else
 
 class ClassmultusReadDIDO extends ClassIniFunctions
 {
-	function __construct($ConfigFile, $EditRightLevel, $Heading, $PageIdentifier) 
+	function __construct($ConfigFile, $EditRightLevel, $Heading, $PageIdentifier, $RunOnce, $Instance) 
 	{
 		$this->EditRightLevel = $EditRightLevel;
 		$this->Heading = $Heading;
 		$this->ConfigFile = $ConfigFile;	
+		$this->RunOnce = $RunOnce;
+		$this->Instance = $Instance;
 		# full path
-		$this->UpdateDirectory = $this->UpdateDirectory."/".$PageIdentifier;
+		if ($this->RunOnce)
+			$this->UpdateDirectory = $this->UpdateDirectory."/".$PageIdentifier;
+		else
+			$this->UpdateDirectory = $this->UpdateDirectory."/".$PageIdentifier."_".$Instance;
 
 		// read the config
 		print "Now we read in the Config: $this->ConfigFile<br>";
