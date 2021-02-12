@@ -329,13 +329,7 @@ class ClassOperateModules(object):
 		bIntegrityProgessEnabled = False
 
 		for Mod in self.multusdModulesConfig.EnabledServicesModules:
-			if Mod.ModuleParameter.ModuleIdentifier == "multusdBNK" and Mod.ModuleParameter.Enabled:
-				bIntegrityProgessEnabled = True
-				break
-			elif Mod.ModuleParameter.ModuleIdentifier == "OLIIntegrity" and Mod.ModuleParameter.Enabled:
-				bIntegrityProgessEnabled = True
-				break
-			elif Mod.ModuleParameter.ModuleIdentifier == "DSVIntegrity" and Mod.ModuleParameter.Enabled:
+			if Mod.ModuleParameter.ModuleIdentifier == "multusdIntegrity" and Mod.ModuleParameter.Enabled:
 				bIntegrityProgessEnabled = True
 				break
 
