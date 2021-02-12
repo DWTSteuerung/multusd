@@ -8,6 +8,8 @@
 # 2020-10-27
 # made it work in reality
 #
+# 2021-02-11
+# serious updates
 
 import os
 import sys
@@ -103,6 +105,7 @@ class multusReadDIDOConfigClass(DWTThriftConfig3.ConfigDataClass):
 			config.read(self.ConfigFile, encoding='utf-8')
 			self.ConfigVersion = self.__assignStr__(config.get('ConfigVersion', 'Value'))
 
+			self.ListenTCPEnable = self.__assignBool__(config.get('ListenTCPEnable', 'Value'))
 			self.ReadInDIEnable = self.__assignBool__(config.get('ReadInDIEnable', 'Value'))
 
 			self.ReadLastDOInsteadOfDI = self.__assignBool__(config.get('ReadLastDOInsteadOfDI', 'Value'))
@@ -357,27 +360,28 @@ class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisSt
 		## if this does not succeed .. we do not have to continue
 		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
-		# declare a server object with desired number
-		# of thread pool workers.
-		self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-
 		self.ObjmultusReadDIDOHandling = ClassmultusReadDIDOHandling(self.ObjmultusReadDIDOConfig, self.ObjmultusdTools, self.ObjmultusHardware)
 		#self.ObjOperatemultusReadDIDOThread.start()
 
-
+		## prepare the ReadDO memory
 		if self.ObjmultusReadDIDOConfig.ReadInDIEnable and self.ObjmultusReadDIDOConfig.ReadLastDOInsteadOfDI:
 			for Status in self.ObjmultusHardware.ReadDOStatus:
 				self.ObjmultusReadDIDOHandling.DIStatusOld.append(Status)
 
-		# setting up the gRPC Server
-		multusReadDIDO_pb2_grpc.add_gRPCmultusReadDIDOServicer_to_server(gRPCmultusReadDIDOServicerClass(self.ObjmultusReadDIDOHandling ), self.gRPCServer)
- 
-		# bind the server to the port defined above
-		self.gRPCServer.add_insecure_port('[::]:{}'.format(self.ObjmultusReadDIDOConfig.gRPCPort))
- 
-		# start the server
-		self.gRPCServer.start()
-		self.ObjmultusdTools.logger.debug('gRPCmultusReadDIDO Server running ...')
+		if self.ObjmultusReadDIDOConfig.ListenTCPEnable:
+			# declare a server object with desired number
+			# of thread pool workers.
+			self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+
+			# setting up the gRPC Server
+			multusReadDIDO_pb2_grpc.add_gRPCmultusReadDIDOServicer_to_server(gRPCmultusReadDIDOServicerClass(self.ObjmultusReadDIDOHandling ), self.gRPCServer)
+	 
+			# bind the server to the port defined above
+			self.gRPCServer.add_insecure_port('[::]:{}'.format(self.ObjmultusReadDIDOConfig.gRPCPort))
+	 
+			# start the server
+			self.gRPCServer.start()
+			self.ObjmultusdTools.logger.debug('gRPCmultusReadDIDO Server running ...')
 
 		NextPeriodicTransfer = 0
 		while self.KeepThreadRunning:
