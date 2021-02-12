@@ -252,6 +252,7 @@ class ClassmultusReadDIDOHandling(object):
 		for RDO in self.ObjmultusReadDIDOConfig.RelevantDIDO:
 
 			if self.ObjmultusReadDIDOConfig.TransferInvertedEnable:
+				# Initialize
 				TransferStatus = -1
 
 				if DIStatus[RDO - 1] == 0:
@@ -337,11 +338,7 @@ class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisSt
 		self.ObjmultusReadDIDOConfig = ObjmultusReadDIDOConfig
 
 		self.ObjmultusHardware = multusHardwareHandler.multusHardwareHandlerClass(self.ObjmultusReadDIDOConfig, self.ObjmultusdTools)
-
-			
-		if self.ObjmultusReadDIDOConfig.ReadInDIEnable and self.ObjmultusReadDIDOConfig.ReadLastDOInsteadOfDI:
-			self.ObjmultusHardware.InitReadDOStatus()
-
+	
 		return
 
 	#####################################################################
@@ -364,9 +361,16 @@ class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisSt
 		#self.ObjOperatemultusReadDIDOThread.start()
 
 		## prepare the ReadDO memory
-		if self.ObjmultusReadDIDOConfig.ReadInDIEnable and self.ObjmultusReadDIDOConfig.ReadLastDOInsteadOfDI:
-			for Status in self.ObjmultusHardware.ReadDOStatus:
-				self.ObjmultusReadDIDOHandling.DIStatusOld.append(Status)
+		if self.ObjmultusReadDIDOConfig.ReadInDIEnable:
+			if self.ObjmultusReadDIDOConfig.ReadLastDOInsteadOfDI:
+				self.ObjmultusHardware.InitReadDOStatus()
+
+				for Status in self.ObjmultusHardware.ReadDOStatus:
+					self.ObjmultusReadDIDOHandling.DIStatusOld.append(Status)
+			else:
+				self.ObjmultusReadDIDOHandling.DIStatus = self.ObjmultusReadDIDOHandling.ObjmultusHardware.readDI(0)			
+				for Status in self.ObjmultusReadDIDOHandling.DIStatus:
+					self.ObjmultusReadDIDOHandling.DIStatusOld.append(Status)
 
 		if self.ObjmultusReadDIDOConfig.ListenTCPEnable:
 			# declare a server object with desired number
@@ -374,7 +378,7 @@ class multusReadDIDOOperateClass(libmultusdClientBasisStuff.multusdClientBasisSt
 			self.gRPCServer = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 
 			# setting up the gRPC Server
-			multusReadDIDO_pb2_grpc.add_gRPCmultusReadDIDOServicer_to_server(gRPCmultusReadDIDOServicerClass(self.ObjmultusReadDIDOHandling ), self.gRPCServer)
+			multusReadDIDO_pb2_grpc.add_gRPCmultusReadDIDOServicer_to_server(gRPCmultusReadDIDOServicerClass(self.ObjmultusReadDIDOHandling), self.gRPCServer)
 	 
 			# bind the server to the port defined above
 			self.gRPCServer.add_insecure_port('[::]:{}'.format(self.ObjmultusReadDIDOConfig.gRPCPort))
