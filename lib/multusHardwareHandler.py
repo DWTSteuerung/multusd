@@ -170,7 +170,7 @@ class multusHardwareHandlerClass(DWTThriftmultus3.DWTRaspIOHandler):
 		if not self.adc:
 			self.Tools.logger.debug("ReadAI3 Funktion not initialized.. run InitMCP3208() first")
 		else:	
-			self.Tools.logger.debug("ReadAI3 Funktion entered, opening CS: " + str(self.Config.multusHardware.AIAdresses[address]))
+			#self.Tools.logger.debug("ReadAI3 Funktion entered, opening CS: " + str(self.Config.multusHardware.AIAdresses[address]))
 
 			AI = list()
 			volts = list()
@@ -195,7 +195,7 @@ class multusHardwareHandlerClass(DWTThriftmultus3.DWTRaspIOHandler):
 
 				i += 1
 
-			self.Tools.logger.debug("ReadAI3: ch0=%5.3f V,  ch1=%5.3f V,  ch2=%5.3f V,  ch3=%5.3f V,  ch4=%5.3f V" % (volts[0], volts[1], volts[2], volts[3], volts[4]))
+			#self.Tools.logger.debug("ReadAI3: ch0=%5.3f V,  ch1=%5.3f V,  ch2=%5.3f V,  ch3=%5.3f V,  ch4=%5.3f V" % (volts[0], volts[1], volts[2], volts[3], volts[4]))
 
 		return volts
 
