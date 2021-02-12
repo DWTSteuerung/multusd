@@ -79,7 +79,7 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 			self.ObjmultusdTools = None
 
 			# 2019-12-04
-			self.DSVIntegrityEnabled = False
+			self.bIntegrityProgessEnabled = False
 
 			# 2021-01-31
 			self.NextDataExpected = 0

@@ -47,6 +47,11 @@ class ClassControlPortThread(threading.Thread):
 		self.StartupOffset = 30.0
 
 		self.DoMultusdLogging = True
+		
+		# 2021-02-12
+		# to prevent too early restarting of a process, in case it had been stoped 
+		# by PID file check
+		self.ControlPortInAction = False
 
 		return
 
@@ -211,6 +216,7 @@ class ClassControlPortThread(threading.Thread):
 										self.JustConnected = False
 										# we can reset this counter too....
 										self.ErrorsAfterFirstConnected = 0
+										self.ControlPortInAction = True
 
 									# read the data
 									data = SingleSocket.recv(1)
@@ -294,6 +300,7 @@ class ClassControlPortThread(threading.Thread):
 
 			else:
 				# waiting for process to come up an connect
+				self.ControlPortInAction = False
 				self.Module.NextDataExpected = 0
 				self.TimestampNextSelectReturnExpected = 0.0
 				time.sleep(0.5)

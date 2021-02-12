@@ -184,7 +184,7 @@ class ClassRunModules(object):
 		Timestamp = time.time()
 
 		# Starting a process
-		if (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess and Timestamp > Module.ProcessTimestampToBeRestarted:
+		if (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout and not Module.ControlThread.ControlPortInAction)) and not self.Shutdown and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess and Timestamp > Module.ProcessTimestampToBeRestarted:
 
 			## first we check, if the process is already running
 			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
@@ -251,7 +251,7 @@ class ClassRunModules(object):
 			## Check on the success of the stopping procedure
 
 		# restarting a process
-		elif (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and self.ReloadProcess and self.StartProcess:
+		elif (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout and not Module.ControlThread.ControlPortInAction)) and not self.Shutdown and self.ReloadProcess and self.StartProcess:
 			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 5 Run a process restart procedure " + Module.ModuleParameter.ModuleBinary)
 
 			self.__DoJobBeforeReStarting__(Module)

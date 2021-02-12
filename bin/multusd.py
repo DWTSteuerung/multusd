@@ -65,7 +65,7 @@ class ClassOperateModules(object):
 		self.multusdModulesConfig = multusdModuleConfig.ClassModuleConfig(self.multusdConfig)
 		## read separatly
 		self.multusdModulesConfig.ReadModulesConfig()
-		self.CheckOndBNKEnabled()
+		self.CheckOnIntegrityProcessEnabled()
 
 		self.UpdateDirectory = self.ObjmultusdTools.multusdTMPDirectory + "/system"
 
@@ -325,19 +325,22 @@ class ClassOperateModules(object):
 		return ProcessorTemperatureIsValid
 
 	############################################################################################################
-	def CheckOndBNKEnabled(self):
-		dBNKEnabled = False
+	def CheckOnIntegrityProcessEnabled(self):
+		bIntegrityProgessEnabled = False
 
 		for Mod in self.multusdModulesConfig.EnabledServicesModules:
 			if Mod.ModuleParameter.ModuleIdentifier == "multusdBNK" and Mod.ModuleParameter.Enabled:
-				dBNKEnabled = True
+				bIntegrityProgessEnabled = True
 				break
 			elif Mod.ModuleParameter.ModuleIdentifier == "OLIIntegrity" and Mod.ModuleParameter.Enabled:
-				dBNKEnabled = True
+				bIntegrityProgessEnabled = True
+				break
+			elif Mod.ModuleParameter.ModuleIdentifier == "DSVIntegrity" and Mod.ModuleParameter.Enabled:
+				bIntegrityProgessEnabled = True
 				break
 
 		for Mod in self.multusdModulesConfig.EnabledServicesModules:
-			Mod.dBNKEnabled = dBNKEnabled
+			Mod.bIntegrityProgessEnabled = bIntegrityProgessEnabled
 
 		return
 	############################################################################################################
@@ -400,7 +403,7 @@ class ClassOperateModules(object):
 				## do a clean startup and read in the config again..
 				## this also frees the memory used by the old threads
 				self.multusdModulesConfig.ReadModulesConfig()
-				self.CheckOndBNKEnabled()
+				self.CheckOnIntegrityProcessEnabled()
 
 				self.__StartAllThreads__()
 
@@ -422,7 +425,7 @@ class ClassOperateModules(object):
 				if ProcessorTemperatureIsValid:
 					## Reread the nwe config
 					self.multusdModulesConfig.ReadModulesConfig()
-					self.CheckOndBNKEnabled()
+					self.CheckOnIntegrityProcessEnabled()
 					self.__StartAllThreads__()
 				else:
 					print ("We wait restarting the processes.. till the temperature is low enough")

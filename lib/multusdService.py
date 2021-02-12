@@ -49,8 +49,8 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 				Library = "lib" + self.Module.ModuleParameter.BasicIdentifier
 				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " We add the library for Module " + self.Module.ModuleParameter.BasicIdentifier + " named: " + Library)
 				DynamicComClass = importlib.import_module(Library)
-				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " We imported library 	successfully:  Integrity Process multusdBNK/OLIIntegrity enabled: " + str(self.Module.DSVIntegrityEnabled))
-				self.ObjFailSafeFunctions = DynamicComClass.FailSafeClass(self.multusdTools, self.Module.ModuleParameter.ModuleConfig, self.Module.ModuleParameter.ModuleIdentifier, self.Module.DSVIntegrityEnabled)
+				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " We imported library 	successfully:  Integrity Process multusdBNK/OLIIntegrity enabled: " + str(self.Module.bIntegrityProgessEnabled))
+				self.ObjFailSafeFunctions = DynamicComClass.FailSafeClass(self.multusdTools, self.Module.ModuleParameter.ModuleConfig, self.Module.ModuleParameter.ModuleIdentifier, self.Module.bIntegrityProgessEnabled)
 				self.ObjmultusdTools.logger.debug("multusdService.ClassmultusdThread Thread " + self.ThreadName + " Setup FailSafeClass successfully")
 			except:
 				self.FatalError = True
