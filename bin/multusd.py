@@ -325,12 +325,14 @@ class ClassOperateModules(object):
 		return ProcessorTemperatureIsValid
 
 	############################################################################################################
+	## the integrity process is a central process checking on the Run and function status of each process
 	def CheckOnIntegrityProcessEnabled(self):
 		bIntegrityProgessEnabled = False
 
 		for Mod in self.multusdModulesConfig.EnabledServicesModules:
-			if Mod.ModuleParameter.ModuleIdentifier == "multusdIntegrity" and Mod.ModuleParameter.Enabled:
+			if Mod.ModuleParameter.ModuleIdentifier == "multusIntegrity" and Mod.ModuleParameter.Enabled:
 				bIntegrityProgessEnabled = True
+				self.ObjmultusdTools.logger.debug("XXXXXXXXXX multusIntegrity is enabled XXXXXXXXX")
 				break
 
 		for Mod in self.multusdModulesConfig.EnabledServicesModules:
