@@ -123,12 +123,9 @@ class ClassControlPortThread(threading.Thread):
 		# First we call the Fail-Safe function
 		self.Module.Thread.ObjFailSafeFunctions.SetIntoFailSafeState(False)
 
-		## 2020-12-17
-		self.Module.DetermineNextStartupTime(self.ThreadName)
-
 		# Then we stop the process
 		# within the stop procedure a second fail-safe procedure call is done
-		self.Module.Thread.ProcessIsRunning = self.Module.Thread.StopSingleProcess(self.Module.ModuleParameter, self.Module.Thread.ProcessIsRunning)
+		self.Module.Thread.ProcessIsRunning = self.Module.Thread.StopSingleProcess(self.Module, self.Module.Thread.ProcessIsRunning)
 
 		return;
 
@@ -245,7 +242,7 @@ class ClassControlPortThread(threading.Thread):
 												self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " Received a valid alive message")
 		
 											# 2021-01-31
-											self.Module.CheckResetProcessCrashCounter(Timestamp = TimestampReceived)
+											self.Module.CheckResetProcessCrashCounter(self.ThreadName, Timestamp = TimestampReceived)
 
 											# increment self.Module.NextDataExpected 
 											if self.Module.NextDataExpected < 9:
