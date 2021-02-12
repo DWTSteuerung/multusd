@@ -156,10 +156,15 @@ class multusHardwareHandlerClass(DWTThriftmultus3.DWTRaspIOHandler):
 	## python3 update of ReadAI
 	##
 	def InitMCP3208(self):
+		self.Tools.logger.debug("Initialize Analog Input device MCP3208")
 		import mcp3208
 
 		self.adc = mcp3208.MCP3208()
 
+		return 
+
+
+	#############################################################################################################
 	def	ReadAI3 (self, address):
 		volts = None
 		if not self.adc:
@@ -169,12 +174,25 @@ class multusHardwareHandlerClass(DWTThriftmultus3.DWTRaspIOHandler):
 
 			AI = list()
 			volts = list()
-		
+	
+			## TODO 
+			FactorCurrentTransformers = 0.80 / 2930.0
+
+			FactorVoltageAnalogIn = 10.0 / 4096.0
+
 			MaxAnalogInputs = 5
 			i = 0
 			while i < MaxAnalogInputs:
 				AI.append(self.adc.read(i))
-				volts.append(AI[-1] * (10.0/4095.0))
+
+				## do th standard 10V Analog in
+				if i < 3:
+					volts.append(AI[-1] * FactorVoltageAnalogIn)
+				
+				## do the current transformers
+				else:
+					volts.append(AI[-1] * FactorCurrentTransformers)
+
 				i += 1
 
 			self.Tools.logger.debug("ReadAI3: ch0=%5.3f V,  ch1=%5.3f V,  ch2=%5.3f V,  ch3=%5.3f V,  ch4=%5.3f V" % (volts[0], volts[1], volts[2], volts[3], volts[4]))
