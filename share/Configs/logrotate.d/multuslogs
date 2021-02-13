@@ -41,7 +41,14 @@
 	create 0644 admin admin
 }
 
-/multus/log/multusReadDIDO.log{
+/multus/log/multusReadDIDO_0.log{
+	rotate 5
+	size 50k
+	compress
+	create 0644 admin admin
+}
+
+/multus/log/multusReadDIDO_1.log{
 	rotate 5
 	size 50k
 	compress
