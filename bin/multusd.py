@@ -160,7 +160,7 @@ class ClassOperateModules(object):
 			
 			# Then we ensure, that the corresponding processes had been shut down
 			TimeLoopToEnd = time.time() + ServiceModule.ModuleParameter.MaxTimeWaitForShutdown
-			while ServiceModule.Thread and ServiceModule.Thread.CheckStatusSingleProcess(ServiceModule.ModuleParameter) and time.time() < TimeLoopToEnd:
+			while ServiceModule.Thread and ServiceModule.Thread.CheckStatusSingleProcess(ServiceModule) and time.time() < TimeLoopToEnd:
 				time.sleep(0.2)
 
 			## OK, process is dead.. we stop the thread itself

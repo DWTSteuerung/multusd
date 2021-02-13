@@ -187,9 +187,12 @@ class ClassRunModules(object):
 		if (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout and not Module.ControlThread.ControlPortInAction)) and not self.Shutdown and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess and Timestamp > Module.ProcessTimestampToBeRestarted:
 
 			## first we check, if the process is already running
-			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
+			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module)
 
 			if not self.ProcessIsRunning:
+				## clear up logging
+				Module.bStartupErrorLogged = False
+
 				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 1 Run a process start procedure for Binary: " + Module.ModuleParameter.ModuleBinary)
 				self.__DoJobBeforeStarting__(Module)
 				self.StartSingleProcess(Module)
@@ -203,7 +206,7 @@ class ClassRunModules(object):
 				TestInterval = 5.0
 				self.ObjmultusdTools.logger.debug("Check on start success of binary " + Module.ModuleParameter.ModuleBinary + " -- this can take up to " + str(MaxTimeProcessStartCanTake) + " seconds")
 				while not self.ProcessIsRunning and time.time() < tProcessHasToBeStarted:
-					self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
+					self.ProcessIsRunning = self.CheckStatusSingleProcess(Module)
 					if not self.ProcessIsRunning:
 						time.sleep(TestInterval)
 
@@ -258,6 +261,7 @@ class ClassRunModules(object):
 			self.ProcessIsRunning = self.StopSingleProcess(Module, ProcessIsRunning = self.ProcessIsRunning, RegularStop = True)
 			self.__DoJobAfterStopping__(Module)
 
+			Module.bStartupErrorLogged = False
 			self.StartSingleProcess(Module)
 			Module.ProcessLastTimeStarted = time.time()
 			## We set this after the start.. because the start itself can take a very long time.. sometimes
@@ -265,9 +269,9 @@ class ClassRunModules(object):
 
 			## Check on the success of the starting procedure
 			while not self.ProcessIsRunning and time.time() < tProcessHasToBeStarted:
-				self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
+				self.ProcessIsRunning = self.CheckStatusSingleProcess(Module)
 				if not self.ProcessIsRunning:
-					self.ObjmultusdTools.logger.debug("Binary " + Module.ModuleParameter.ModuleBinary + " is still not running restart !!!!!!")
+					#self.ObjmultusdTools.logger.debug("Binary " + Module.ModuleParameter.ModuleBinary + " is still not running restart !!!!!!")
 					time.sleep(2.0)	
 
 			if self.ProcessIsRunning:
@@ -299,7 +303,7 @@ class ClassRunModules(object):
 		if self.ProcessIsRunning and (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout)) and not self.Shutdown and (self.NextPIDStatusToDo < time.time()): # and Module.ModuleParameter.ModuleStatusByPIDFileEnable:
 			#print ("Want to run ")
 			# In the End, after the CHecking Process was done, we check the status
-			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
+			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module)
 			if not self.ProcessIsRunning:
 				# First we call the Fail-Safe function.. in case ther are some
 				if Module.Thread and Module.Thread.ObjFailSafeFunctions:
@@ -482,7 +486,7 @@ class ClassRunModules(object):
 						time.sleep(1)
 
 						## We killed the process, now we check if it is still running
-						ProcessIsRunning = self.CheckStatusSingleProcess(Module.ModuleParameter)
+						ProcessIsRunning = self.CheckStatusSingleProcess(Module)
 						if not ProcessIsRunning:
 							self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " StopSingleProcess: " + Module.ModuleParameter.ModuleBinary + " -- Process PID " + str(pid) + " has been successfyully killed with signal 9")
 
@@ -529,27 +533,27 @@ class ClassRunModules(object):
 
 	############################################################################################################
 	## do a kill 0 on the PID 
-	def CheckStatusSingleProcessByPIDFile(self, ModuleParameter):
+	def CheckStatusSingleProcessByPIDFile(self, Module):
 		## gets the PID from the PIDFile
 		## runs a kill 0 on it, to check if it is running
 		
 		bLocalRunningStatus = False
 		pid = None
 
-		if not os.path.exists(ModuleParameter.ModulePIDFile):
+		if not os.path.exists(Module.ModuleParameter.ModulePIDFile):
 			if not self.PIDFileCleanupLoggingDone:
-				self.ObjmultusdTools.logger.debug("CheckStatusSingleProcessByPIDFile: PID File for Binary: " + ModuleParameter.ModuleBinary + " not existant we clean up the processes")
+				self.ObjmultusdTools.logger.debug("CheckStatusSingleProcessByPIDFile: PID File for Binary: " + Module.ModuleParameter.ModuleBinary + " not existant we clean up the processes")
 				self.PIDFileCleanupLoggingDone = True
 
-			bLocalRunningStatus = self.__StopProcessByPS__(ModuleParameter, ProcessIsRunningLocal = bLocalRunningStatus)
+			bLocalRunningStatus = self.__StopProcessByPS__(Module.ModuleParameter, ProcessIsRunningLocal = bLocalRunningStatus)
 
 			## this here works, but we stop the process it theer should be a PID and there is none instead
 			"""
-			#print ("CheckStatusSingleProcessByPIDFile: PID File for Binary: " + ModuleParameter.ModuleBinary + " not existant we look in the process list")
-			PIDList = self.__CheckOnProcessInPS__(ModuleParameter.ModuleBinary)
+			#print ("CheckStatusSingleProcessByPIDFile: PID File for Binary: " + Module.ModuleParameter.ModuleBinary + " not existant we look in the process list")
+			PIDList = self.__CheckOnProcessInPS__(Module.ModuleParameter.ModuleBinary)
 			Len = len(PIDList)
 			if Len and PIDList[0]:
-				#print ("CheckStatusSingleProcessByPIDFile: We got " + str(Len) + " processes of binary " + ModuleParameter.ModuleBinary + " running with PIDs: " + str(PIDList))
+				#print ("CheckStatusSingleProcessByPIDFile: We got " + str(Len) + " processes of binary " + Module.ModuleParameter.ModuleBinary + " running with PIDs: " + str(PIDList))
 				## it should run only once, we run a test on the first process
 				PsPID = None
 				try:
@@ -561,22 +565,26 @@ class ClassRunModules(object):
 					self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " CheckStatusSingleProcessByPIDFile: kill 0 on PID " + str(PsPID) + " from ps failed somehow.. it ran into an OS Error")
 					## 2021-02-04
 					## we make it sure
-					bLocalRunningStatus = self.__StopProcessByPS__(ModuleParameter, ProcessIsRunningLocal = bLocalRunningStatus)
+					bLocalRunningStatus = self.__StopProcessByPS__(Module.ModuleParameter, ProcessIsRunningLocal = bLocalRunningStatus)
 					pass
 			"""
 		else:
 			try:
 				pid = None
-				with open(ModuleParameter.ModulePIDFile, "r") as f:
+				with open(Module.ModuleParameter.ModulePIDFile, "r") as f:
 					pid = int(f.read().strip())
 					if pid:
 						os.kill(pid, 0)
 						bLocalRunningStatus = True
 			except:
-				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " CheckStatusSingleProcessByPIDFile: PID File exists (PID: " + str(pid) + ") but Process Check with kill 0 failed.. process is not running")
+				if not Module.bStartupErrorLogged:
+					ErrorString = self.ObjmultusdTools.FormatException()	
+					self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " CheckStatusSingleProcessByPIDFile -- kill 0 failed Errorstring: " + ErrorString)
+					self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " CheckStatusSingleProcessByPIDFile: PID File exists (PID: " + str(pid) + ") but Process Check with kill 0 failed.. process is not running")
+					Module.bStartupErrorLogged = True
 				## 2021-02-04
 				## we make it sure
-				bLocalRunningStatus = self.__StopProcessByPS__(ModuleParameter, ProcessIsRunningLocal = bLocalRunningStatus)
+				bLocalRunningStatus = self.__StopProcessByPS__(Module.ModuleParameter, ProcessIsRunningLocal = bLocalRunningStatus)
 				pass
 
 		return bLocalRunningStatus 
@@ -586,17 +594,17 @@ class ClassRunModules(object):
 	##
 	## checks, whether to run a script or a kill -0 on the PID from the pIDFile
 	##
-	def CheckStatusSingleProcess(self, ModuleParameter):
+	def CheckStatusSingleProcess(self, Module):
 		ProcessIsRunning = False
 		
-		#print ("Entered CheckStatusSingleProcess ModuleParameter.ModuleStatusByPIDFileEnable: " + str(ModuleParameter.ModuleStatusByPIDFileEnable))
+		#print ("Entered CheckStatusSingleProcess Module.ModuleParameter.ModuleStatusByPIDFileEnable: " + str(Module.ModuleParameter.ModuleStatusByPIDFileEnable))
 	
-		if ModuleParameter.ModuleStatusByPIDFileEnable:
-			ProcessIsRunning = self.CheckStatusSingleProcessByPIDFile(ModuleParameter)
-		elif ModuleParameter.ModuleStatusScript:
-			ProcessIsRunning = self.CheckStatusSingleProcessByScript(ModuleParameter.ModuleStatusScript, ModuleParameter.ModuleStatusScriptParameter)
-		elif ModuleParameter.ModuleBinary and ModuleParameter.ModuleBinaryStartupDirectlyEnable:
-			PIDList = self.__CheckOnProcessInPS__(ModuleParameter.ModuleBinary)
+		if Module.ModuleParameter.ModuleStatusByPIDFileEnable:
+			ProcessIsRunning = self.CheckStatusSingleProcessByPIDFile(Module)
+		elif Module.ModuleParameter.ModuleStatusScript:
+			ProcessIsRunning = self.CheckStatusSingleProcessByScript(Module.ModuleParameter.ModuleStatusScript, Module.ModuleParameter.ModuleStatusScriptParameter)
+		elif Module.ModuleParameter.ModuleBinary and Module.ModuleParameter.ModuleBinaryStartupDirectlyEnable:
+			PIDList = self.__CheckOnProcessInPS__(Module.ModuleParameter.ModuleBinary)
 			if len(PIDList) and len(PIDList[0]):	
 				ProcessIsRunning = True
 

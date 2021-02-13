@@ -88,6 +88,9 @@ class ClassModuleConfig(multusdBasicConfigfileStuff.ClassBasicConfigfileStuff):
 			# too complicated.. we introduce this flag
 			self.DetermineNextStartupTimeAlreadyCalled = False
 
+			# 2021-02-13
+			self.bStartupErrorLogged = False
+
 		## 2021-01-31
 		## moved this function here
 		##
