@@ -170,9 +170,19 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 		## setup the periodic control stuff..
 		## if this does not succeed .. we do not have to continue
 		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
+	
+	
+		## 2021-02-14
+		## Made it a bit better
+		## Dfine some Constants
+		ConnectionStatus_Worst_Ever = 0
+		Connection_Status_No_Internet = 1
+		Connection_Status_Internet_No_OVPN = 2
+		Connection_Status_Internet_OVPN = 3
 
 		LEDStatus = False
-		ConnectionStatus = 0
+		ConnectionStatus = ConnectionStatus_Worst_Ever
+		OldConnectionStatus = ConnectionStatus
 		Counter = 0
 		RefreshCounter = 0
 		iErrors = -1
@@ -205,25 +215,42 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 				elif LocalOVPNStatus.ConnectionStatus:
 					vErrors = 0
 			else:
+				## if no OVPN Check is done.. the status shall be OK
 				vErrors = 0
 
 			print ("InternetErrors: " + str(iErrors))
 			print ("OpenVPNErrors:  " + str(vErrors))
 
-			if iErrors < 0:
-				ConnectionStatus = 0
-			elif iErrors == 0 and vErrors == 0:
-				ConnectionStatus = 3
-			elif iErrors == 0 and vErrors != 0:
-				ConnectionStatus = 2
-			elif iErrors > 0:	
-				ConnectionStatus = 1
+			# 2021-02-14
+			# made it less worse... this old programm
+			#
+			# ConnectionStatus_Worst_Ever = 0
+			# Connection_Status_No_Internet = 1
+			# Connection_Status_Internet_No_OVPN = 2
+			# Connection_Status_Internet_OVPN = 3
 
-			if ConnectionStatus == 0:
+			## We got nothing .. no internet and no VPN
+			## complete desaster
+			if iErrors < 0:
+				ConnectionStatus = ConnectionStatus_Worst_Ever
+
+			## Everything is OK.. Internet fine as well as OVPN
+			elif iErrors == 0 and vErrors == 0:
+				ConnectionStatus = Connection_Status_Internet_OVPN
+
+			## Almost OK.. Internet OK, but OVPN on failure
+			elif iErrors == 0 and vErrors != 0:
+				ConnectionStatus = Connection_Status_Internet_No_OVPN
+
+			## Internet Errore
+			elif iErrors > 0:	
+				ConnectionStatus = Connection_Status_No_Internet
+
+			if ConnectionStatus == ConnectionStatus_Worst_Ever:
 				Counter = 0
 				LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
 
-			elif ConnectionStatus == 1:
+			elif ConnectionStatus == Connection_Status_No_Internet:
 				if LEDStatus:
 					Counter = 0
 					LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
@@ -231,7 +258,7 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 					Counter = 0
 					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
 
-			elif ConnectionStatus == 2:
+			elif ConnectionStatus == Connection_Status_Internet_No_OVPN:
 
 				if LEDStatus and Counter >= 3:
 					Counter = 0
@@ -240,11 +267,35 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 					Counter = 0
 					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
 
-			elif ConnectionStatus == 3:
+			elif ConnectionStatus == Connection_Status_Internet_OVPN:
 				Counter = 0
 				if not LEDStatus or RefreshCounter >= 120:
 					RefreshCounter = 0	
 					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
+
+			## 2021-02-14
+			## do some logging
+			if OldConnectionStatus != ConnectionStatus:
+
+				## Ok, we go through it again.. but it does not matter in this tiny process
+				if ConnectionStatus == ConnectionStatus_Worst_Ever:
+					self.ObjmultusdTools.logger.debug("ConnectionStatus changed: Something seriously wrong....")
+					
+				elif ConnectionStatus == Connection_Status_No_Internet:
+					self.ObjmultusdTools.logger.debug("ConnectionStatus changed: No Internet")
+
+				elif ConnectionStatus == Connection_Status_Internet_No_OVPN:
+					self.ObjmultusdTools.logger.debug("ConnectionStatus changed: Internet OK but no OpenVPN")
+
+				elif ConnectionStatus == Connection_Status_Internet_OVPN:
+
+					if not self.ObjmultusStatusLEDConfig.LEDVPNEnable:
+						self.ObjmultusdTools.logger.debug("ConnectionStatus changed: Internet OK -- OpenVPN is not evaluated.. we regard it as OK")
+					else:
+						self.ObjmultusdTools.logger.debug("ConnectionStatus changed: Internet OK as well as OpenVPN OK .. everything is fine")
+
+				## we log once.. we keep it in mind
+				OldConnectionStatus = ConnectionStatus
 
 		
 			## Damit ab und zu das LED-Signal aktualisiert wird
