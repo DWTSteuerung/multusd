@@ -254,7 +254,11 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 
 		TimestampNextmultusdPing = time.time()
 
-		TimestampNextOVPNCheck = time.time()
+		# 2021-02-14
+		## We wat a time tille we check everything for the first time
+		## everything has to settle after starting
+		StartupDelay = 60.0
+		TimestampNextOVPNCheck = time.time() + StartupDelay
 		
 		# declare a server object with desired number
 		# of thread pool workers.
@@ -277,15 +281,16 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			self.ObjDSVintegrityStatus.gRPCSetupDSVIntegrityConnection()
 	
 		while self.KeepThreadRunning:
+			bRunJustATest = False
+
 			## We do the periodic messages and stuff to indicate that we are alive for the multusd
 			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 
-			if self.ObjmultusOpenVPNCheckConfig.OVPNCheckEnable:
-				Timestamp = time.time()
-				if Timestamp >= TimestampNextOVPNCheck:
-					self.ObjOVPNConnectionChecks.runOVPNCheck(self.ObjmultusOpenVPNCheckConfig.OVPNCheckAdresses)
-					TimestampNextOVPNCheck = Timestamp + self.ObjmultusOpenVPNCheckConfig.OVPNCheckInterval
-					SleepingTime = 0.0
+			Timestamp = time.time()
+			if self.ObjmultusOpenVPNCheckConfig.OVPNCheckEnable and Timestamp >= TimestampNextOVPNCheck:
+				self.ObjOVPNConnectionChecks.runOVPNCheck(self.ObjmultusOpenVPNCheckConfig.OVPNCheckAdresses)
+				TimestampNextOVPNCheck = Timestamp + self.ObjmultusOpenVPNCheckConfig.OVPNCheckInterval
+				bRunJustATest = True
 
 			## the most important assignment, which is evaluated by DSVIntegrity
 			if self.ObjmultusOpenVPNCheckConfig.OVPNCheckEnable:
@@ -299,7 +304,7 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			elif self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled:
 				self.ObjDSVintegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, self.ObjOVPNConnectionChecks.ProcessHealthStatus, bForce = False)
 
-			if self.KeepThreadRunning:
+			if self.KeepThreadRunning and not bRunJustATest:
 				time.sleep (SleepingTime)
 
 		self.ObjmultusdTools.logger.debug('gRPCService Server Stopped ...')

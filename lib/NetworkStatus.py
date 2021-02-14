@@ -146,6 +146,11 @@ class gRPCLANWANStatusClass(object):
 					if self.LogginEnable:
 						ErrorString = self.ObjmultusdTools.FormatException()
 						self.ObjmultusdTools.logger.debug("gRPC WAN Status Error: " + ErrorString)
+		## 2021-02-14
+		## if not enabled.. we return True
+		else:
+			Response.ConnectionStatus = True
+			Response.ValidStatus = True
 
 		return Response, self.ConnectionStatus
 
@@ -243,6 +248,12 @@ class gRPCOVPNStatusClass(object):
 					if self.LogginEnable:
 						ErrorString = self.ObjmultusdTools.FormatException()
 						self.ObjmultusdTools.logger.debug("gRPC OVPN Status Error: " + ErrorString)
+
+		## 2021-02-14
+		## if not enabled.. we return True
+		else:
+			Response.ConnectionStatus = True
+			Response.ValidStatus = True
 
 		return Response, self.OVPNConnectionStatus
 

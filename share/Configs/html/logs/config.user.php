@@ -253,6 +253,59 @@
 				}
 			}
 		},
+		"multusReadDIDO_0": {
+			"display" : "multusReadDIDO_0.log",
+			"path"    : "\/multus\/log\/multusReadDIDO_0.log",
+			"refresh" : 5,
+			"max"     : 20,
+			"notify"  : true,
+			"format"  : {
+				"type"         : "HTTPD 2.2",
+                "regex"        : "|(.*),[0-9]* \\[DEBUG\\] (.*)$|U",
+				"export_title" : "Log",
+				"match"        : {
+                    "Date"     : 1,
+					"Log"      : 2
+				},
+				"types": {
+                    "Date"     : "Y-m-d H:i:s",
+					"IP"       : "ip:http",
+					"Log"      : "preformatted",
+					"Severity" : "badge:severity",
+					"Referer"  : "link"
+				},
+				"exclude": {
+					"Log": ["\/PHP Stack trace:\/", "\/PHP *[0-9]*\\. \/"]
+				}
+			}
+		},
+		"multusReadDIDO_1": {
+			"display" : "multusReadDIDO_1.log",
+			"path"    : "\/multus\/log\/multusReadDIDO_1.log",
+			"refresh" : 5,
+			"max"     : 20,
+			"notify"  : true,
+			"format"  : {
+				"type"         : "HTTPD 2.2",
+                "regex"        : "|(.*),[0-9]* \\[DEBUG\\] (.*)$|U",
+				"export_title" : "Log",
+				"match"        : {
+                    "Date"     : 1,
+					"Log"      : 2
+				},
+				"types": {
+                    "Date"     : "Y-m-d H:i:s",
+					"IP"       : "ip:http",
+					"Log"      : "preformatted",
+					"Severity" : "badge:severity",
+					"Referer"  : "link"
+				},
+				"exclude": {
+					"Log": ["\/PHP Stack trace:\/", "\/PHP *[0-9]*\\. \/"]
+				}
+			}
+		},
+
 		"multusStatusLED": {
 			"display" : "multusStatusLED.log",
 			"path"    : "\/multus\/log\/multusStatusLED.log",

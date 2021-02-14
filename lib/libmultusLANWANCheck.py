@@ -306,8 +306,12 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 		## if this does not succeed .. we do not have to continue
 		SleepingTime, self.KeepThreadRunning = self.SetupPeriodicmessages(bPeriodicmultusdSocketPingEnable)
 
-		TimestampNextLANCheck = time.time()
-		TimestampNextWANCheck = time.time()
+		# 2021-02-14
+		## We wat a time tille we check everything for the first time
+		## everything has to settle after starting
+		StartupDelay = 60.0
+		TimestampNextLANCheck = time.time() + StartupDelay
+		TimestampNextWANCheck = time.time() + StartupDelay
 		
 		# declare a server object with desired number
 		# of thread pool workers.
@@ -331,6 +335,7 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			self.ObjDSVIntegrityStatus.gRPCSetupDSVIntegrityConnection()
 
 		while self.KeepThreadRunning:
+			bRunJustATest = False
 			## We do the periodic messages and stuff to indicate that we are alive for the multusd
 			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 
@@ -338,17 +343,18 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			if self.ObjmultusLANWANCheckConfig.LANCheckEnable and Timestamp >= TimestampNextLANCheck: 
 				self.ObjConnectionChecks.runLANCheck()
 				TimestampNextLANCheck = Timestamp + self.LANCheckInterval
-				SleepingTime = 0.0
+				bRunJustATest = True
 
-			if self.ObjmultusLANWANCheckConfig.WANCheckEnable and self.ObjmultusLANWANCheckConfig.WANCheckEnable:
-				Timestamp = time.time()
-				if Timestamp >= TimestampNextWANCheck:
-					self.ObjConnectionChecks.runWANCheck(self.ObjmultusLANWANCheckConfig.WANCheckAdresses)
-					TimestampNextWANCheck = Timestamp + self.ObjmultusLANWANCheckConfig.WANCheckInterval
-					SleepingTime = 0.0
+			## We check the WAN connection only, in case we did not have checked the LAN within the same run
+			## And we check it only, if LAN Check is enabled
+			if not bRunJustATest and self.ObjmultusLANWANCheckConfig.LANCheckEnable and self.ObjmultusLANWANCheckConfig.WANCheckEnable and Timestamp >= TimestampNextWANCheck:
+				self.ObjConnectionChecks.runWANCheck(self.ObjmultusLANWANCheckConfig.WANCheckAdresses)
+				TimestampNextWANCheck = Timestamp + self.ObjmultusLANWANCheckConfig.WANCheckInterval
+				bRunJustATest = True
 
 			## the most important assignment, which is evaluated by DSVIntegrity
-			self.ObjConnectionChecks.ProcessHealthStatus = (self.ObjConnectionChecks.LANConnectionStatus.ConnectionStatus or not self.ObjmultusLANWANCheckConfig.LANCheckEnable) and (self.ObjConnectionChecks.WANConnectionStatus.ConnectionStatus or not self.ObjmultusLANWANCheckConfig.WANCheckEnable)
+			self.ObjConnectionChecks.ProcessHealthStatus = (self.ObjConnectionChecks.LANConnectionStatus.ConnectionStatus or not self.ObjmultusLANWANCheckConfig.LANCheckEnable) \
+			and (self.ObjConnectionChecks.WANConnectionStatus.ConnectionStatus or not (self.ObjmultusLANWANCheckConfig.LANCheckEnable and self.ObjmultusLANWANCheckConfig.WANCheckEnable))
 
 			if self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled and OldProcessHealthStatus != self.ObjConnectionChecks.ProcessHealthStatus:
 				self.ObjDSVIntegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = True)
@@ -356,7 +362,7 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			elif self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled:
 				self.ObjDSVIntegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = False)
 
-			if self.KeepThreadRunning:
+			if self.KeepThreadRunning and not bRunJustATest:
 				time.sleep (SleepingTime)
 
 		self.ObjmultusdTools.logger.debug('gRPCService Server Stopped ...')

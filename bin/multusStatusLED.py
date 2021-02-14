@@ -184,37 +184,48 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 		ConnectionStatus = ConnectionStatus_Worst_Ever
 		OldConnectionStatus = ConnectionStatus
 		Counter = 0
+		MaxConnectionErrorCounter = 3
 		RefreshCounter = 0
+		MaxRefreshRounter = 120
 		iErrors = -1
 		vErrors = -1
+
+		StartupDelay = 70.0
+		CheckInterval = 20.0
+		TimeNextInternetCheck = time.time() + StartupDelay - 2.0
+		TimeNextOVPNCheck = time.time() + StartupDelay + 2.0
 		 
 		while (self.KeepThreadRunning):
 			
 			## We do the periodic messages and stuff to indicate that we are alive for the multusd
 			self.KeepThreadRunning = self.DoPeriodicMessage(bPeriodicmultusdSocketPingEnable)
 
+			Timestamp = time.time()
+
 			#read Errors Internet connection
-			if self.ObjmultusStatusLEDConfig.LEDInternetEnable:
+			if self.ObjmultusStatusLEDConfig.LEDInternetEnable and Timestamp > TimeNextInternetCheck:
 				LocalLANWANStatus, bConnectionStatus = self.ObjLANWANStatus.GetWANStatus("StatusLED WAN Status Request")
+				TimeNextInternetCheck = Timestamp + CheckInterval
 				if not LocalLANWANStatus.ValidStatus:
 					iErrors = -1
 				elif not LocalLANWANStatus.ConnectionStatus:
 					iErrors = 1
 				elif LocalLANWANStatus.ConnectionStatus:
 					iErrors = 0
-			else:
+			elif not self.ObjmultusStatusLEDConfig.LEDInternetEnable:
 				iErrors = 0
 				
 
-			if self.ObjmultusStatusLEDConfig.LEDVPNEnable:
+			if self.ObjmultusStatusLEDConfig.LEDVPNEnable and Timestamp > TimeNextOVPNCheck:
 				LocalOVPNStatus, bConnectionStatus = self.ObjOVPNStatus.GetOVPNStatus("StatusLED OVPN Status Request")
+				TimeNextOVPNCheck = Timestamp + CheckInterval
 				if not LocalOVPNStatus.ValidStatus:
 					vErrors = -1
 				elif not LocalOVPNStatus.ConnectionStatus:
 					vErrors = 1
 				elif LocalOVPNStatus.ConnectionStatus:
 					vErrors = 0
-			else:
+			elif not self.ObjmultusStatusLEDConfig.LEDVPNEnable:
 				## if no OVPN Check is done.. the status shall be OK
 				vErrors = 0
 
@@ -260,16 +271,16 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 
 			elif ConnectionStatus == Connection_Status_Internet_No_OVPN:
 
-				if LEDStatus and Counter >= 3:
+				if LEDStatus and Counter >= MaxConnectionErrorCounter:
 					Counter = 0
 					LEDStatus = self.ObjStatusLEDFunctions.LEDOff()
-				elif not LEDStatus and Counter >= 3:
+				elif not LEDStatus and Counter >= MaxConnectionErrorCounter:
 					Counter = 0
 					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
 
 			elif ConnectionStatus == Connection_Status_Internet_OVPN:
 				Counter = 0
-				if not LEDStatus or RefreshCounter >= 120:
+				if not LEDStatus or RefreshCounter >= MaxRefreshRounter:
 					RefreshCounter = 0	
 					LEDStatus = self.ObjStatusLEDFunctions.LEDOn()
 
@@ -303,7 +314,7 @@ class StatusLEDClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			RefreshCounter += 1
 
 			Counter += 1
-			time.sleep (1.0)
+			time.sleep (SleepingTime)
 
 def DoTheDeamonJob(bDaemon = True):
 

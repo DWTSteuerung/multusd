@@ -187,13 +187,11 @@ class ClassRunModules(object):
 		if (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout and not Module.ControlThread.ControlPortInAction)) and not self.Shutdown and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess and Timestamp > Module.ProcessTimestampToBeRestarted:
 
 			## first we check, if the process is already running
-			LocalProcessIsRunning = True
-			while LocalProcessIsRunning:
-				LocalProcessIsRunning = self.CheckStatusSingleProcess(Module)
+			LocalProcessIsRunning = self.CheckStatusSingleProcess(Module)
 
-				## if there is something running.. we kill it
-				if LocalProcessIsRunning:
-					LocalProcessIsRunning = self.StopSingleProcess(Module, ProcessIsRunning = LocalProcessIsRunning, RegularStop = True)
+			## if there is something running.. we kill it
+			if LocalProcessIsRunning:
+				LocalProcessIsRunning = self.StopSingleProcess(Module, ProcessIsRunning = LocalProcessIsRunning, RegularStop = True)
 
 			## Everything is dead .. we startup
 			self.ProcessIsRunning = LocalProcessIsRunning

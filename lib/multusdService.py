@@ -102,11 +102,6 @@ class ClassmultusdThread(multusdModuleHandling.ClassRunModules, threading.Thread
 
 	############################################################################################################
 	def run(self):
-		"""
-		# no more need to make the SleepingTime depending on the Refresh port.. it can go slow.. not problem, because only starting is affected
-		if self.Module.ModuleParameter.ModuleControlMaxAge and self.Module.ModuleParameter.ModuleControlMaxAge < self.SleepingTime:
-			self.SleepingTime = self.Module.ModuleParameter.ModuleControlMaxAge
-		"""
 
 		ReloadFile = self.UpdateDirectory + "/Reload"
 
