@@ -65,10 +65,10 @@ class multusOVPNClass(object):
 		self.ProcessIsRunningTwice = True
 
 		# First we check, whether the DSVIntegrity is enabled
-		DSVIntegrityEnabled = False
+		multusIntegrityEnabled = False
 		for Module in ObjmultusdModulesConfig.AllModules:
-			if Module.ModuleParameter.ModuleIdentifier == "DSVIntegrity" and Module.ModuleParameter.Enabled:
-				DSVIntegrityEnabled = True
+			if Module.ModuleParameter.ModuleIdentifier == "multusIntegrity" and Module.ModuleParameter.Enabled:
+				multusIntegrityEnabled = True
 				print ("DSVIntegrity is enabled")
 				break
 
@@ -88,7 +88,7 @@ class multusOVPNClass(object):
 					self.ObjmultusOpenVPNCheckConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusOpenVPNCheckConfig.Ident = Ident
-				self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled = DSVIntegrityEnabled
+				self.ObjmultusOpenVPNCheckConfig.multusIntegrityEnabled = multusIntegrityEnabled
 				self.ObjmultusOpenVPNCheckConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
 				self.ObjmultusOpenVPNCheckConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
 				self.ObjmultusOpenVPNCheckConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge

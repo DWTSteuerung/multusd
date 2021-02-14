@@ -69,10 +69,10 @@ class multusLANWANCheckClass(object):
 		self.ProcessIsRunningTwice = True
 
 		# First we check, whether the DSVIntegrity is enabled
-		DSVIntegrityEnabled = False
+		multusIntegrityEnabled = False
 		for Module in ObjmultusdModulesConfig.AllModules:
-			if Module.ModuleParameter.ModuleIdentifier == "DSVIntegrity" and Module.ModuleParameter.Enabled:
-				DSVIntegrityEnabled = True
+			if Module.ModuleParameter.ModuleIdentifier == "multusIntegrity" and Module.ModuleParameter.Enabled:
+				multusIntegrityEnabled = True
 				break
 
 		#WalkThe list of modules to find our configuration files.. 
@@ -91,7 +91,7 @@ class multusLANWANCheckClass(object):
 					self.ObjmultusLANWANCheckConfig.ModuleControlPortEnabled = Module.ModuleParameter.ModuleControlPortEnabled 
 
 				self.ObjmultusLANWANCheckConfig.Ident = Ident
-				self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled = DSVIntegrityEnabled 
+				self.ObjmultusLANWANCheckConfig.multusIntegrityEnabled = multusIntegrityEnabled 
 				self.ObjmultusLANWANCheckConfig.LPIDFile = Module.ModuleParameter.ModulePIDFile
 				self.ObjmultusLANWANCheckConfig.ModuleControlPort = Module.ModuleParameter.ModuleControlPort 
 				self.ObjmultusLANWANCheckConfig.ModuleControlMaxAge = Module.ModuleParameter.ModuleControlMaxAge

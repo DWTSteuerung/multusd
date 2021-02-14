@@ -46,14 +46,14 @@ import json
 # to have a class like this
 #
 class FailSafeClass(object):
-	def __init__(self, Tools, ModuleConfig, Ident, DSVIntegrityEnabled):
+	def __init__(self, Tools, ModuleConfig, Ident, multusIntegrityEnabled):
 		
 		self.Ident = Ident
 
 				## We get the gRPC stuff for doing refresh on DSVIntegrity, if enabled
 		self.ObjDSVIntegrityStatus = None
 		"""
-		if DSVIntegrityEnabled:
+		if multusIntegrityEnabled:
 			self.ObjDSVIntegrityStatus = libDSVIntegrityStatus.gRPCDSVIntegrityStatusClass(Tools)
 			self.ObjDSVIntegrityStatus.gRPCSetupDSVIntegrityConnection()
 		"""
@@ -329,8 +329,8 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 
 		OldProcessHealthStatus = self.ObjConnectionChecks.ProcessHealthStatus
 		self.ObjDSVIntegrityStatus = None
-		print ("multusDSVIntegrity Enabled: " + str(self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled))
-		if self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled:
+		print ("multusDSVIntegrity Enabled: " + str(self.ObjmultusLANWANCheckConfig.multusIntegrityEnabled))
+		if self.ObjmultusLANWANCheckConfig.multusIntegrityEnabled:
 			self.ObjDSVIntegrityStatus = libDSVIntegrityStatus.gRPCDSVIntegrityStatusClass(self.ObjmultusdTools)
 			self.ObjDSVIntegrityStatus.gRPCSetupDSVIntegrityConnection()
 
@@ -356,10 +356,10 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			self.ObjConnectionChecks.ProcessHealthStatus = (self.ObjConnectionChecks.LANConnectionStatus.ConnectionStatus or not self.ObjmultusLANWANCheckConfig.LANCheckEnable) \
 			and (self.ObjConnectionChecks.WANConnectionStatus.ConnectionStatus or not (self.ObjmultusLANWANCheckConfig.LANCheckEnable and self.ObjmultusLANWANCheckConfig.WANCheckEnable))
 
-			if self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled and OldProcessHealthStatus != self.ObjConnectionChecks.ProcessHealthStatus:
+			if self.ObjmultusLANWANCheckConfig.multusIntegrityEnabled and OldProcessHealthStatus != self.ObjConnectionChecks.ProcessHealthStatus:
 				self.ObjDSVIntegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = True)
 				OldProcessHealthStatus = self.ObjConnectionChecks.ProcessHealthStatus
-			elif self.ObjmultusLANWANCheckConfig.DSVIntegrityEnabled:
+			elif self.ObjmultusLANWANCheckConfig.multusIntegrityEnabled:
 				self.ObjDSVIntegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusLANWANCheckConfig.Ident, self.ObjConnectionChecks.ProcessHealthStatus, bForce = False)
 
 			if self.KeepThreadRunning and not bRunJustATest:

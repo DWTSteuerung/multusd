@@ -132,14 +132,12 @@ class multusDeleteDuplicatesOperateClass(libmultusdClientBasisStuff.multusdClien
 		# init parent class
 		libmultusdClientBasisStuff.multusdClientBasisStuffClass.__init__(self, ObjmultusDeleteDuplicatesConfig, ObjmultusdTools)
 
-
 		self.ObjmultusDeleteDuplicatesConfig = ObjmultusDeleteDuplicatesConfig
-		self.ObjmultusdTools = ObjmultusdTools
 		
 		#Setup mysql Connection
-		self.mysqlCon, self.cursor = self.ObjmultusdTools.OpenMySQL(self.ObjmultusDeleteDuplicatesConfig.ThriftMysqlOpts)
-		self.KeepThreadRunning = True
-		
+		if (self.ObjmultusDeleteDuplicatesConfig.DeleteDuplicatesEnable or self.ObjmultusDeleteDuplicatesConfig.SearchForDuplicatesEnable):
+			self.mysqlCon, self.cursor = self.ObjmultusdTools.OpenMySQL(self.ObjmultusDeleteDuplicatesConfig.ThriftMysqlOpts)
+
 		return
 
 ############################################################
@@ -286,33 +284,36 @@ class multusDeleteDuplicatesOperateClass(libmultusdClientBasisStuff.multusdClien
 
 		## We get the Index of the path in the database"
 		NextPathCheck = time.time()
-		while not self.ObjmultusDeleteDuplicatesConfig.Index_BP:
-			SQL="select INDEX_BP from BasicPath where BP_Path='"+ self.ObjmultusDeleteDuplicatesConfig.PathToCheck + "'"
-			self.cursor.execute(SQL)
-			data=self.cursor.fetchone()
 
-			if data:
-				self.ObjmultusDeleteDuplicatesConfig.Index_BP = data[0]
-				self.ObjmultusdTools.logger.debug("We got Index of path " + self.ObjmultusDeleteDuplicatesConfig.PathToCheck + ": " + str(self.ObjmultusDeleteDuplicatesConfig.Index_BP)) 
-			else:
-				self.ObjmultusdTools.logger.debug("we did not find the path: " + self.ObjmultusDeleteDuplicatesConfig.PathToCheck +  " in the database")	
-				SQL="insert into BasicPath set BP_Path='"+ self.ObjmultusDeleteDuplicatesConfig.PathToCheck + "', BP_TSCreated=sysdate()"
+		if (self.ObjmultusDeleteDuplicatesConfig.DeleteDuplicatesEnable or self.ObjmultusDeleteDuplicatesConfig.SearchForDuplicatesEnable):
+			while not self.ObjmultusDeleteDuplicatesConfig.Index_BP:
+				SQL="select INDEX_BP from BasicPath where BP_Path='"+ self.ObjmultusDeleteDuplicatesConfig.PathToCheck + "'"
 				self.cursor.execute(SQL)
+				data=self.cursor.fetchone()
+
+				if data:
+					self.ObjmultusDeleteDuplicatesConfig.Index_BP = data[0]
+					self.ObjmultusdTools.logger.debug("We got Index of path " + self.ObjmultusDeleteDuplicatesConfig.PathToCheck + ": " + str(self.ObjmultusDeleteDuplicatesConfig.Index_BP)) 
+				else:
+					self.ObjmultusdTools.logger.debug("we did not find the path: " + self.ObjmultusDeleteDuplicatesConfig.PathToCheck +  " in the database")	
+					SQL="insert into BasicPath set BP_Path='"+ self.ObjmultusDeleteDuplicatesConfig.PathToCheck + "', BP_TSCreated=sysdate()"
+					self.cursor.execute(SQL)
 			
 		DoNotRunTwice = False
+
+		# get the current path
+		SavedPath = os.getcwd()
 
 		# main loop
 		while self.KeepThreadRunning:
 			
 			Timestamp = time.time()
 			self.KeepThreadRunning = self.DoPeriodicMessage(self.bPeriodicmultusdSocketPingEnable)
-
-			# get the current path
-			SavedPath = os.getcwd()
-			## first we change to the path
-			os.chdir(self.ObjmultusDeleteDuplicatesConfig.PathToCheck)
-
+	
 			if not DoNotRunTwice and (self.ObjmultusDeleteDuplicatesConfig.DeleteDuplicatesEnable or self.ObjmultusDeleteDuplicatesConfig.SearchForDuplicatesEnable) and NextPathCheck < Timestamp:
+				## first we change to the path
+				os.chdir(self.ObjmultusDeleteDuplicatesConfig.PathToCheck)
+
 				if self.ObjmultusDeleteDuplicatesConfig.SearchForDuplicatesEnable:
 					self.ObjmultusdTools.logger.debug("Start performing check on duplicates in Path: " + self.ObjmultusDeleteDuplicatesConfig.PathToCheck)
 

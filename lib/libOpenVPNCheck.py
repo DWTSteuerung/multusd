@@ -43,14 +43,14 @@ import json
 # to have a class like this
 #
 class FailSafeClass(object):
-	def __init__(self, Tools, ModuleConfig, Ident, DSVIntegrityEnabled):
+	def __init__(self, Tools, ModuleConfig, Ident, multusIntegrityEnabled):
 		
 		self.Ident = Ident
 
 				## We get the gRPC stuff for doing refresh on DSVIntegrity, if enabled
 		self.ObjDSVintegrityStatus = None
 		"""
-		if DSVIntegrityEnabled:
+		if multusIntegrityEnabled:
 			self.ObjDSVintegrityStatus = libDSVIntegrityStatus.gRPCDSVIntegrityStatusClass(Tools)
 			self.ObjDSVintegrityStatus.gRPCSetupDSVIntegrityConnection()
 		"""
@@ -276,7 +276,7 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 
 		OldProcessHealthStatus = self.ObjOVPNConnectionChecks.ProcessHealthStatus
 		self.ObjDSVintegrityStatus = None
-		if self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled:
+		if self.ObjmultusOpenVPNCheckConfig.multusIntegrityEnabled:
 			self.ObjDSVintegrityStatus = libDSVIntegrityStatus.gRPCDSVIntegrityStatusClass(self.ObjmultusdTools)
 			self.ObjDSVintegrityStatus.gRPCSetupDSVIntegrityConnection()
 	
@@ -298,10 +298,10 @@ class gRPCOperateClass(libmultusdClientBasisStuff.multusdClientBasisStuffClass):
 			else:
 				self.ObjOVPNConnectionChecks.ProcessHealthStatus = True
 				
-			if self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled and OldProcessHealthStatus != self.ObjOVPNConnectionChecks.ProcessHealthStatus:
+			if self.ObjmultusOpenVPNCheckConfig.multusIntegrityEnabled and OldProcessHealthStatus != self.ObjOVPNConnectionChecks.ProcessHealthStatus:
 				self.ObjDSVintegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, self.ObjOVPNConnectionChecks.ProcessHealthStatus, bForce = True)
 				OldProcessHealthStatus = self.ObjOVPNConnectionChecks.ProcessHealthStatus
-			elif self.ObjmultusOpenVPNCheckConfig.DSVIntegrityEnabled:
+			elif self.ObjmultusOpenVPNCheckConfig.multusIntegrityEnabled:
 				self.ObjDSVintegrityStatus.gRPCSendProcessStatusClient(self.ObjmultusOpenVPNCheckConfig.Ident, self.ObjOVPNConnectionChecks.ProcessHealthStatus, bForce = False)
 
 			if self.KeepThreadRunning and not bRunJustATest:
