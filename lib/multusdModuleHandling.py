@@ -187,28 +187,36 @@ class ClassRunModules(object):
 		if (not Module.ControlThread or (Module.ControlThread and not Module.ControlThread.bTimeout and not Module.ControlThread.ControlPortInAction)) and not self.Shutdown and self.StartProcess and not self.ProcessIsRunning and not self.ReloadProcess and not self.StopProcess and Timestamp > Module.ProcessTimestampToBeRestarted:
 
 			## first we check, if the process is already running
-			self.ProcessIsRunning = self.CheckStatusSingleProcess(Module)
+			LocalProcessIsRunning = True
+			while LocalProcessIsRunning:
+				LocalProcessIsRunning = self.CheckStatusSingleProcess(Module)
 
-			if not self.ProcessIsRunning:
-				## clear up logging
-				Module.bStartupErrorLogged = False
+				## if there is something running.. we kill it
+				if LocalProcessIsRunning:
+					LocalProcessIsRunning = self.StopSingleProcess(Module, ProcessIsRunning = LocalProcessIsRunning, RegularStop = True)
 
-				self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 1 Run a process start procedure for Binary: " + Module.ModuleParameter.ModuleBinary)
-				self.__DoJobBeforeStarting__(Module)
-				self.StartSingleProcess(Module)
-				Module.ProcessLastTimeStarted = time.time()
-				## We set this after the start.. because the start itself can take a very long time.. sometimes
-				tProcessHasToBeStarted = time.time() + MaxTimeProcessStartCanTake
+			## Everything is dead .. we startup
+			self.ProcessIsRunning = LocalProcessIsRunning
 
-				## Check on the success of the starting procedure
-				# on multusdJson we give a litte bit time, till process comes up.. 
-				# fetching to config from the server, may take some time
-				TestInterval = 5.0
-				self.ObjmultusdTools.logger.debug("Check on start success of binary " + Module.ModuleParameter.ModuleBinary + " -- this can take up to " + str(MaxTimeProcessStartCanTake) + " seconds")
-				while not self.ProcessIsRunning and time.time() < tProcessHasToBeStarted:
-					self.ProcessIsRunning = self.CheckStatusSingleProcess(Module)
-					if not self.ProcessIsRunning:
-						time.sleep(TestInterval)
+			## clear up logging
+			Module.bStartupErrorLogged = False
+
+			self.ObjmultusdTools.logger.debug("Thread: " + self.ThreadName + " 1 Run a process start procedure for Binary: " + Module.ModuleParameter.ModuleBinary)
+			self.__DoJobBeforeStarting__(Module)
+			self.StartSingleProcess(Module)
+			Module.ProcessLastTimeStarted = time.time()
+			## We set this after the start.. because the start itself can take a very long time.. sometimes
+			tProcessHasToBeStarted = time.time() + MaxTimeProcessStartCanTake
+
+			## Check on the success of the starting procedure
+			# on multusdJson we give a litte bit time, till process comes up.. 
+			# fetching to config from the server, may take some time
+			TestInterval = 5.0
+			self.ObjmultusdTools.logger.debug("Check on start success of binary " + Module.ModuleParameter.ModuleBinary + " -- this can take up to " + str(MaxTimeProcessStartCanTake) + " seconds")
+			while not self.ProcessIsRunning and time.time() < tProcessHasToBeStarted:
+				self.ProcessIsRunning = self.CheckStatusSingleProcess(Module)
+				if not self.ProcessIsRunning:
+					time.sleep(TestInterval)
 
 			if self.ProcessIsRunning:
 
