@@ -49,7 +49,7 @@ class DWTThriftToolsClass(object):
 		#print ("Mysql Host: " + mysql_opts['host'] + " User: " +mysql_opts['user'] + " Pass: " +mysql_opts['pass'] + " DB: " + mysql_opts['db'])
 
 		#mysqlCon = MySQLdb.connect(mysql_opts['host'], mysql_opts['user'], mysql_opts['pass'], mysql_opts['db']) 
-		mysqlCon = pymysql.connect(mysql_opts['host'], mysql_opts['user'], mysql_opts['pass'], mysql_opts['db']) 
+		mysqlCon = pymysql.connect(host = mysql_opts['host'], user = mysql_opts['user'], password = mysql_opts['pass'], database = mysql_opts['db']) 
 		mysqlCon.apilevel = "2.0" 
 		mysqlCon.threadsafety = 2 
 		mysqlCon.paramstyle = "format"
